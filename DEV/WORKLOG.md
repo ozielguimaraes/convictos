@@ -23,6 +23,12 @@
 - Schema e admin recriados; dados anteriores eram só semente/teste.
 - Verificado: ordenação ICU correta (água < Ávila < banana < zebra) e API ok.
 
+## 2026-07-15 — Categoria Outros no cardápio
+
+- Categoria "Outros" (tema verde-escuro, última posição) via migração de dados
+  única em schema.sql, guardada pela nova tabela `schema_marks` — evita que a
+  categoria ressuscite a cada deploy se o admin renomear/excluir.
+
 ## 2026-07-15 — Fix cardapio.querc.app + gestão de usuários
 
 - **Bug produção:** cardapio.querc.app abria em branco — a reescrita por Host
