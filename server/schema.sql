@@ -122,6 +122,37 @@ create table if not exists order_items (
   position int not null default 0
 );
 
+-- ---------- AÇÕES ENTRE AMIGOS ----------
+
+create table if not exists acoes (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  number_price numeric(10, 2) not null check (number_price > 0),
+  block_size int not null default 10 check (block_size > 0),
+  created_at timestamptz not null default now()
+);
+
+create table if not exists acao_sellers (
+  id uuid primary key default gen_random_uuid(),
+  acao_id uuid not null references acoes(id) on delete cascade,
+  name text not null,
+  created_at timestamptz not null default now()
+);
+
+-- Bloco de números de um vendedor. sold_count = números vendidos do bloco;
+-- received = valor já acertado. Valor vendido e pendente são calculados
+-- (sold_count × acoes.number_price − received).
+create table if not exists acao_blocks (
+  id uuid primary key default gen_random_uuid(),
+  acao_id uuid not null references acoes(id) on delete cascade,
+  seller_id uuid not null references acao_sellers(id) on delete cascade,
+  start_number int not null check (start_number > 0),
+  sold_count int not null default 0 check (sold_count >= 0),
+  received numeric(10, 2) not null default 0 check (received >= 0),
+  created_at timestamptz not null default now(),
+  unique (acao_id, start_number)
+);
+
 -- Marca migrações de dados já aplicadas: o schema roda a cada subida do
 -- container, e sem o marcador um insert "if not exists" ressuscitaria dados
 -- que o admin renomeou ou excluiu.

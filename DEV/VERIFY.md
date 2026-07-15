@@ -1,5 +1,16 @@
 # VERIFY
 
+## 2026-07-15 — ações entre amigos + sidebar
+
+- API via curl: criar ação (R$ 10 × 10), vendedor, bloco 1–10; bloco
+  sobreposto → 409; sold_count 11 → 400; 7 vendidos + R$ 50 recebidos →
+  agregado vendido 70 / recebido 50 / pendente 20.
+- Navegador: sidebar renderiza (desktop fixa; mobile é o default do CSS,
+  media query ≥900px verificada via getComputedStyle); seção Ações mostra
+  card com totais e detalhe com edição de bloco recalculando ao vivo
+  ("✓ acertado" ao zerar pendência); salvar bloco atualiza totais do
+  vendedor e da ação.
+
 ## 2026-07-15 — usuários + fix assets do cardápio
 
 - `npm run db:schema` — migração role ok (microzapple = super_admin).

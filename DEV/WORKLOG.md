@@ -1,5 +1,18 @@
 # WORKLOG
 
+## 2026-07-15 — Sidebar no admin + ações entre amigos
+
+- **Layout:** /admin/ migrado de abas horizontais para navegação lateral
+  (gaveta no mobile, fixa ≥900px), preparado para novas seções. Admin.jsx
+  virou shell; cada seção vive em src/admin/sections/. CSS novo escopado em
+  `#root.admin-root` para não afetar o admin do cardápio (mesmo admin.css).
+- **Ações entre amigos:** ação (nome + valor do número + números por bloco,
+  padrão 10) → vendedores → blocos (número inicial, vendidos, recebido).
+  Vendido/pendente sempre calculados (sold_count × number_price − received),
+  nunca gravados. Tabelas acoes/acao_sellers/acao_blocks; rotas em
+  server/routes/acoes.js (requireAdmin). Blocos da mesma ação não podem se
+  sobrepor (409) e vendidos ≤ tamanho do bloco (400).
+
 ## 2026-07-14 — Criação do projeto
 
 - Projeto criado do zero: linktree (`/`), avisos (`/avisos/`), admin (`/admin/`),

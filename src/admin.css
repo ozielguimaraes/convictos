@@ -150,3 +150,68 @@ input { font-family: inherit; }
 .preview-box .pv-avatar { width: 44px; height: 44px; border-radius: 50%; margin: 0 auto 8px; display: grid; place-items: center; font-size: 22px; }
 .preview-box .pv-title { font-weight: 800; font-size: 15px; }
 .preview-box .pv-btn { margin-top: 10px; border-radius: 10px; padding: 9px; font-size: 13px; font-weight: 700; }
+
+/* ===== layout com sidebar (só o painel convictos: #root.admin-root) ===== */
+#root.admin-root { max-width: none; }
+
+.layout { min-height: 100vh; }
+.sidebar { position: fixed; top: 0; left: 0; bottom: 0; width: 250px; background: var(--green-dark); color: #fff; display: flex; flex-direction: column; padding: 18px 12px; z-index: 40; transform: translateX(-100%); transition: transform 0.25s ease; }
+.sidebar.open { transform: translateX(0); }
+.backdrop { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.4); opacity: 0; pointer-events: none; transition: opacity 0.25s ease; z-index: 30; }
+.backdrop.show { opacity: 1; pointer-events: auto; }
+
+.sb-brand { font-family: var(--font-logo); font-style: italic; font-weight: 800; font-size: 24px; padding: 4px 10px 18px; display: flex; align-items: center; gap: 8px; }
+.sb-admin { background: var(--orange); font-family: var(--font-head); font-style: normal; font-weight: 800; font-size: 11px; padding: 2px 7px; border-radius: 5px; transform: rotate(-6deg); }
+.sb-nav { display: flex; flex-direction: column; gap: 4px; flex: 1; }
+.nav-item { display: flex; align-items: center; gap: 10px; color: rgba(255, 255, 255, 0.85); font-family: var(--font-head); font-weight: 700; font-size: 14px; padding: 11px 12px; border-radius: 12px; text-align: left; text-decoration: none; }
+.nav-item.active { background: rgba(255, 255, 255, 0.16); color: #fff; }
+.nav-item:active { background: rgba(255, 255, 255, 0.1); }
+.nav-emoji { font-size: 17px; width: 22px; text-align: center; }
+.nav-ext { margin-left: auto; opacity: 0.6; }
+.sb-foot { border-top: 1px solid rgba(255, 255, 255, 0.15); padding-top: 12px; display: flex; align-items: center; gap: 8px; }
+.sb-user { flex: 1; font-size: 12.5px; font-weight: 600; opacity: 0.8; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.topbar { position: sticky; top: 0; z-index: 20; background: var(--green-dark); color: #fff; padding: 14px 16px; display: flex; align-items: center; gap: 12px; }
+.menu-btn { color: #fff; font-size: 20px; padding: 4px 10px; border-radius: 8px; background: rgba(255, 255, 255, 0.14); }
+.topbar-title { font-family: var(--font-head); font-weight: 800; font-size: 15px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+.content { min-height: 100vh; }
+.content .a-body { max-width: 680px; margin: 0 auto; }
+/* No layout com sidebar a savebar fixa quebraria o alinhamento — sticky no fluxo. */
+.admin-root .a-savebar { position: sticky; bottom: 0; left: auto; right: auto; max-width: none; margin: 0; padding: 12px 0 calc(12px + env(safe-area-inset-bottom)); }
+
+@media (min-width: 900px) {
+  .sidebar { transform: none; }
+  .content { margin-left: 250px; }
+  .menu-btn, .backdrop { display: none; }
+}
+
+/* ===== ações entre amigos ===== */
+.a-tag { background: var(--orange); color: #fff; font-family: var(--font-head); font-weight: 800; font-size: 11px; padding: 2px 7px; border-radius: 5px; }
+
+.stat-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+.stat { background: #fff; border: 1.5px solid var(--line); border-radius: 12px; padding: 8px 10px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.stat b { font-family: var(--font-head); font-size: 15px; color: var(--ink); white-space: nowrap; }
+.stat-label { font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); }
+.stat.warn { border-color: #f0c36c; background: #fff7e6; }
+.stat.warn b { color: #a35c00; }
+.stat.ok b { color: var(--green-dark); }
+
+.vendedor-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+.vendedor-top h3 { margin: 0; }
+.vendedor-empty { color: var(--muted); font-size: 13px; padding: 4px 0 10px; }
+
+.bloco-row { border-top: 1px solid var(--line); padding: 12px 0; }
+.bloco-nums { display: flex; align-items: center; justify-content: space-between; font-family: var(--font-head); font-weight: 800; font-size: 16px; color: var(--green-dark); margin-bottom: 8px; }
+.bloco-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.bloco-fields label { font-size: 11.5px; font-weight: 700; color: var(--muted); display: flex; flex-direction: column; gap: 4px; position: relative; }
+.bloco-fields input { border: 1.5px solid var(--line); border-radius: 10px; padding: 9px 10px; background: #fff; font-size: 15px; font-weight: 700; color: var(--ink); width: 100%; }
+.bloco-fields input:focus { outline: none; border-color: var(--green); }
+.bloco-hint { position: absolute; right: 10px; bottom: 10px; font-size: 12px; color: var(--muted); font-weight: 600; }
+.bloco-calc { display: flex; align-items: center; gap: 12px; margin-top: 8px; font-size: 12.5px; color: var(--muted); flex-wrap: wrap; }
+.bloco-calc .pend { color: #a35c00; font-weight: 700; }
+.bloco-calc .ok { color: var(--green-dark); font-weight: 700; }
+.bloco-calc .btn-small-save { margin-left: auto; }
+
+.acao-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.back-btn { color: var(--muted); font-weight: 700; font-size: 14px; padding: 0 0 12px; display: inline-block; }
