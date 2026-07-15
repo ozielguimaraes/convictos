@@ -1,5 +1,17 @@
 # VERIFY
 
+## 2026-07-15 — usuários + fix assets do cardápio
+
+- `npm run db:schema` — migração role ok (microzapple = super_admin).
+- API via curl (build de produção em :3001):
+  - GET /api/auth/me → inclui id e role.
+  - POST/GET/PUT/DELETE /api/admin/users como super admin — ok.
+  - Admin comum em /api/admin/users → 403 "acesso restrito".
+  - DELETE do super admin / própria conta → 400 bloqueado.
+  - `curl -H 'Host: cardapio.querc.app' :3001/assets/x.js` → 200 (antes 404).
+- Navegador: /admin/ com super admin mostra aba Usuários (lista + criar +
+  redefinir senha); login por link mágico ok.
+
 ## 2026-07-14
 
 - `npm run build` — ok (5 entradas geradas em dist/).

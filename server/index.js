@@ -23,7 +23,8 @@ const dist = join(dirname(fileURLToPath(import.meta.url)), "..", "dist");
 if (existsSync(dist)) {
   app.use((req, res, next) => {
     const host = String(req.headers.host || "");
-    if (host.startsWith("cardapio.") && !req.path.startsWith("/cardapio") && !req.path.startsWith("/api")) {
+    // /assets fica na raiz do dist (compartilhado entre as páginas) — não reescrever.
+    if (host.startsWith("cardapio.") && !req.path.startsWith("/cardapio") && !req.path.startsWith("/api") && !req.path.startsWith("/assets")) {
       req.url = "/cardapio" + (req.url === "/" ? "/" : req.url);
     }
     next();

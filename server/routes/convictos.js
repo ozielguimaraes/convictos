@@ -1,6 +1,7 @@
 import { Router } from "express";
+import bcrypt from "bcryptjs";
 import { query, withTransaction } from "../db.js";
-import { requireAdmin } from "../auth.js";
+import { requireAdmin, requireSuperAdmin } from "../auth.js";
 
 export const convictosRouter = Router();
 
@@ -150,6 +151,75 @@ convictosRouter.delete("/admin/avisos/:id", requireAdmin, async (req, res, next)
   try {
     const { rowCount } = await query("delete from avisos where id = $1", [req.params.id]);
     if (!rowCount) return res.status(404).json({ error: "aviso não encontrado" });
+    res.json({ ok: true });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// ---------- usuários (somente super admin) ----------
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const USER_FIELDS = "id, email, name, role, password_hash is not null as has_password, created_at";
+
+convictosRouter.get("/admin/users", requireSuperAdmin, async (req, res, next) => {
+  try {
+    const { rows } = await query(`select ${USER_FIELDS} from admin_users order by created_at`);
+    res.json(rows);
+  } catch (e) {
+    next(e);
+  }
+});
+
+convictosRouter.post("/admin/users", requireSuperAdmin, async (req, res, next) => {
+  try {
+    const email = String(req.body.email || "").toLowerCase().trim();
+    const name = String(req.body.name || "").trim();
+    const password = String(req.body.password || "");
+    if (!EMAIL_RE.test(email)) return res.status(400).json({ error: "e-mail inválido" });
+    if (password && password.length < 6) return res.status(400).json({ error: "senha precisa de ao menos 6 caracteres" });
+    const hash = password ? bcrypt.hashSync(password, 10) : null;
+    const { rows } = await query(
+      `insert into admin_users (email, name, password_hash) values ($1, $2, $3)
+       on conflict (email) do nothing
+       returning ${USER_FIELDS}`,
+      [email, name, hash]
+    );
+    if (!rows.length) return res.status(409).json({ error: "já existe usuário com esse e-mail" });
+    res.status(201).json(rows[0]);
+  } catch (e) {
+    next(e);
+  }
+});
+
+convictosRouter.put("/admin/users/:id", requireSuperAdmin, async (req, res, next) => {
+  try {
+    const id = Number(req.params.id);
+    const name = String(req.body.name || "").trim();
+    const password = String(req.body.password || "");
+    if (password && password.length < 6) return res.status(400).json({ error: "senha precisa de ao menos 6 caracteres" });
+    const hash = password ? bcrypt.hashSync(password, 10) : null;
+    const { rows } = await query(
+      `update admin_users set name = $1,
+         password_hash = coalesce($2, password_hash)
+       where id = $3 returning ${USER_FIELDS}`,
+      [name, hash, id]
+    );
+    if (!rows.length) return res.status(404).json({ error: "usuário não encontrado" });
+    res.json(rows[0]);
+  } catch (e) {
+    next(e);
+  }
+});
+
+convictosRouter.delete("/admin/users/:id", requireSuperAdmin, async (req, res, next) => {
+  try {
+    const id = Number(req.params.id);
+    if (id === req.admin.id) return res.status(400).json({ error: "não é possível excluir a própria conta" });
+    const { rows } = await query("select role from admin_users where id = $1", [id]);
+    if (!rows.length) return res.status(404).json({ error: "usuário não encontrado" });
+    if (rows[0].role === "super_admin") return res.status(400).json({ error: "o super admin não pode ser excluído" });
+    await query("delete from admin_users where id = $1", [id]);
     res.json({ ok: true });
   } catch (e) {
     next(e);

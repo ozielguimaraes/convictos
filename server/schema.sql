@@ -14,8 +14,17 @@ create table if not exists admin_users (
   email text not null unique,
   name text not null default '',
   password_hash text,
+  role text not null default 'admin' check (role in ('admin', 'super_admin')),
   created_at timestamptz not null default now()
 );
+
+-- Migração para bancos criados antes da coluna role.
+alter table admin_users add column if not exists role text not null default 'admin';
+
+-- Super admin fixo: único que gerencia usuários. Sem password_hash ainda
+-- entra por OTP/link mágico.
+insert into admin_users (email, role) values ('microzapple@gmail.com', 'super_admin')
+  on conflict (email) do update set role = 'super_admin';
 
 create table if not exists sessions (
   token uuid primary key default gen_random_uuid(),

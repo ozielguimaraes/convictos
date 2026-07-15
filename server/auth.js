@@ -30,7 +30,7 @@ export async function requireAdmin(req, res, next) {
     const token = req.cookies[SESSION_COOKIE];
     if (!token) return res.status(401).json({ error: "não autenticado" });
     const { rows } = await query(
-      `select u.id, u.email, u.name from sessions s
+      `select u.id, u.email, u.name, u.role from sessions s
        join admin_users u on u.id = s.user_id
        where s.token = $1 and s.expires_at > now()`,
       [token]
@@ -41,6 +41,14 @@ export async function requireAdmin(req, res, next) {
   } catch (e) {
     next(e);
   }
+}
+
+/* Middleware: exige sessão de super admin (gestão de usuários). */
+export function requireSuperAdmin(req, res, next) {
+  requireAdmin(req, res, () => {
+    if (req.admin.role !== "super_admin") return res.status(403).json({ error: "acesso restrito" });
+    next();
+  });
 }
 
 export const authRouter = Router();
@@ -143,5 +151,5 @@ authRouter.post("/logout", async (req, res, next) => {
 });
 
 authRouter.get("/me", requireAdmin, (req, res) => {
-  res.json({ email: req.admin.email, name: req.admin.name });
+  res.json({ id: req.admin.id, email: req.admin.email, name: req.admin.name, role: req.admin.role });
 });

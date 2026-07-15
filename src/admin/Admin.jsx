@@ -298,11 +298,111 @@ function AvisosTab({ showToast }) {
   );
 }
 
+/* ---------- aba Usuários (somente super admin) ---------- */
+
+function UsuariosTab({ me, showToast }) {
+  const [users, setUsers] = useState(null);
+  const [draft, setDraft] = useState({ email: "", name: "", password: "" });
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    api.get("/api/admin/users").then(setUsers).catch((e) => showToast("Erro ao carregar: " + e.message, true));
+  }, []);
+
+  const add = async () => {
+    if (!draft.email.trim()) { showToast("E-mail obrigatório", true); return; }
+    setSaving(true);
+    try {
+      const created = await api.post("/api/admin/users", draft);
+      setUsers((list) => [...list, created]);
+      setDraft({ email: "", name: "", password: "" });
+      showToast("✓ Usuário criado!");
+    } catch (e) {
+      showToast("Erro ao criar: " + e.message, true);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const resetPassword = async (u) => {
+    const password = prompt(`Nova senha para ${u.email} (mín. 6 caracteres):`);
+    if (!password) return;
+    try {
+      const saved = await api.put(`/api/admin/users/${u.id}`, { name: u.name, password });
+      setUsers((list) => list.map((x) => (x.id === saved.id ? saved : x)));
+      showToast("✓ Senha redefinida!");
+    } catch (e) {
+      showToast("Erro: " + e.message, true);
+    }
+  };
+
+  const del = async (u) => {
+    if (!confirm(`Excluir o usuário ${u.email}?`)) return;
+    try {
+      await api.del(`/api/admin/users/${u.id}`);
+      setUsers((list) => list.filter((x) => x.id !== u.id));
+      showToast("✓ Usuário excluído!");
+    } catch (e) {
+      showToast("Erro ao excluir: " + e.message, true);
+    }
+  };
+
+  if (!users) return <div className="a-loading">Carregando usuários…</div>;
+
+  return (
+    <React.Fragment>
+      <div className="form-block">
+        <h3>Novo usuário</h3>
+        <div className="form-field">
+          <label>E-mail</label>
+          <input type="email" value={draft.email} placeholder="email@dominio.com" onChange={(e) => setDraft({ ...draft, email: e.target.value })} />
+        </div>
+        <div className="form-field">
+          <label>Nome (opcional)</label>
+          <input type="text" value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} />
+        </div>
+        <div className="form-field">
+          <label>Senha (opcional — sem senha, entra por código no e-mail)</label>
+          <input type="password" value={draft.password} onChange={(e) => setDraft({ ...draft, password: e.target.value })} />
+        </div>
+        <button className="add-cat-btn" onClick={add} disabled={saving}>
+          {saving ? "Criando…" : "+ Criar usuário"}
+        </button>
+      </div>
+
+      <div className="form-block">
+        <h3>Usuários</h3>
+        {users.map((u) => (
+          <div className="aviso-row" key={u.id}>
+            <div>
+              <b>{u.email}</b>{u.id === me.id ? " (você)" : ""}
+              {u.role === "super_admin" && <span className="a-tag" style={{ marginLeft: 8 }}>Super Admin</span>}
+            </div>
+            <div className="aviso-meta">
+              {u.name || "Sem nome"} · {u.has_password ? "senha definida" : "só código por e-mail"} ·
+              criado em {new Date(u.created_at).toLocaleDateString("pt-BR")}
+            </div>
+            <div className="aviso-actions">
+              <button className="btn-small-save" onClick={() => resetPassword(u)}>Redefinir senha</button>
+              {u.role !== "super_admin" && u.id !== me.id && (
+                <button className="btn-small-danger" onClick={() => del(u)}>Excluir</button>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </React.Fragment>
+  );
+}
+
 /* ---------- shell ---------- */
 
-function Panel({ onLogout }) {
+function Panel({ me, onLogout }) {
   const [tab, setTab] = useState("links");
   const [toast, showToast] = useToast();
+
+  const tabs = [["links", "Links"], ["aparencia", "Aparência"], ["avisos", "Avisos"]];
+  if (me.role === "super_admin") tabs.push(["usuarios", "Usuários"]);
 
   return (
     <React.Fragment>
@@ -313,7 +413,7 @@ function Panel({ onLogout }) {
       </header>
 
       <div className="tabs">
-        {[["links", "Links"], ["aparencia", "Aparência"], ["avisos", "Avisos"]].map(([key, label]) => (
+        {tabs.map(([key, label]) => (
           <button key={key} className={"tab" + (tab === key ? " active" : "")} onClick={() => setTab(key)}>
             {label}
           </button>
@@ -324,6 +424,7 @@ function Panel({ onLogout }) {
         {tab === "links" && <LinksTab showToast={showToast} />}
         {tab === "aparencia" && <AparenciaTab showToast={showToast} />}
         {tab === "avisos" && <AvisosTab showToast={showToast} />}
+        {tab === "usuarios" && me.role === "super_admin" && <UsuariosTab me={me} showToast={showToast} />}
         <div style={{ textAlign: "center", marginTop: 8 }}>
           <a href="/cardapio/admin/" style={{ color: "#6f6b52", fontSize: 13, fontWeight: 600 }}>
             🍔 Gerenciar cardápio →
@@ -338,19 +439,22 @@ function Panel({ onLogout }) {
 
 export default function Admin() {
   const [phase, setPhase] = useState("checking"); // checking | out | in
+  const [me, setMe] = useState(null);
 
-  useEffect(() => {
+  const loadMe = () =>
     api.get("/api/auth/me")
-      .then(() => setPhase("in"))
+      .then((m) => { setMe(m); setPhase("in"); })
       .catch(() => setPhase("out"));
-  }, []);
+
+  useEffect(() => { loadMe(); }, []);
 
   const logout = async () => {
     await api.post("/api/auth/logout");
+    setMe(null);
     setPhase("out");
   };
 
   if (phase === "checking") return <div className="a-loading">Carregando…</div>;
-  if (phase === "out") return <Login onOk={() => setPhase("in")} backHref="/" backLabel="← Voltar à página inicial" />;
-  return <Panel onLogout={logout} />;
+  if (phase === "out") return <Login onOk={loadMe} backHref="/" backLabel="← Voltar à página inicial" />;
+  return <Panel me={me} onLogout={logout} />;
 }

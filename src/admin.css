@@ -124,7 +124,7 @@ input { font-family: inherit; }
 .form-block h3 { font-family: var(--font-head); font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 12px; color: var(--green-dark); }
 .form-field { margin-bottom: 12px; }
 .form-field label { display: block; font-size: 12px; font-weight: 700; color: var(--muted); margin-bottom: 5px; }
-.form-field input[type="text"], .form-field textarea { width: 100%; border: 1.5px solid var(--line); border-radius: 10px; padding: 10px 12px; background: #fff; font-size: 15px; color: var(--ink); }
+.form-field input[type="text"], .form-field input[type="email"], .form-field input[type="password"], .form-field textarea { width: 100%; border: 1.5px solid var(--line); border-radius: 10px; padding: 10px 12px; background: #fff; font-size: 15px; color: var(--ink); }
 .form-field textarea { min-height: 110px; resize: vertical; line-height: 1.5; }
 .form-field input:focus, .form-field textarea:focus { outline: none; border-color: var(--green); }
 

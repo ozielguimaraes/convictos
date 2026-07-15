@@ -18,9 +18,20 @@ Admin: `microzapple@gmail.com` — senha definida localmente via
   ECONNREFUSED :5432, verifique se o container está de pé (docker ps).
 - SMTP não configurado: OTP/link mágico saem no console do servidor.
 
+## Produção (Coolify)
+
+- App "Landing page" no projeto Convictos (coolify.querc.app), domínios
+  convictos.querc.app + cardapio.querc.app, deploy por push na main.
+- DATABASE_URL aponta para o Postgres do Coolify no VPS (database convictos).
+- Após deploy com mudança de schema: `npm run db:schema` no terminal do
+  container da app (Coolify → Terminal).
+
+## Usuários
+
+- microzapple@gmail.com é super_admin (fixado no schema.sql, idempotente).
+- Só super admin vê a aba Usuários em /admin/ e acessa /api/admin/users.
+
 ## Próximos passos possíveis
 
-- Configurar SMTP real no `.env`.
-- Deploy: apontar convictos.querc.app e cardapio.querc.app para o mesmo
-  serviço (reescrita por Host já implementada em server/index.js).
+- Configurar SMTP real no `.env` (produção: variáveis SMTP_* no Coolify).
 - Tela de pedidos no admin do cardápio (pendência herdada do cardapio-on).
