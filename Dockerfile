@@ -15,4 +15,6 @@ RUN npm ci --omit=dev
 COPY server ./server
 COPY --from=build /app/dist ./dist
 EXPOSE 3001
-CMD ["node", "server/index.js"]
+# schema.sql é idempotente: aplica migrações pendentes a cada deploy
+# (não há passo manual no fluxo git push -> Coolify).
+CMD ["sh", "-c", "node server/scripts/run-schema.js && node server/index.js"]
