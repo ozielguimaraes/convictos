@@ -122,6 +122,14 @@ create table if not exists order_items (
   position int not null default 0
 );
 
+-- Marca migrações de dados já aplicadas: o schema roda a cada subida do
+-- container, e sem o marcador um insert "if not exists" ressuscitaria dados
+-- que o admin renomeou ou excluiu.
+create table if not exists schema_marks (
+  name text primary key,
+  applied_at timestamptz not null default now()
+);
+
 -- ---------- SEMENTES ----------
 
 insert into profile (id) values (1) on conflict (id) do nothing;
@@ -172,4 +180,15 @@ begin
     (cid, 'Trento', '', 3.5, 5),
     (cid, 'Trident', '', 3.0, 6),
     (cid, 'Mentos', '', 3.5, 7);
+end $$;
+
+-- Categoria Outros (pedido do maestro, 2026-07-15): inserida uma única vez —
+-- depois o admin pode renomear ou excluir sem que ela volte a cada deploy.
+do $$
+begin
+  if not exists (select 1 from schema_marks where name = 'cardapio-categoria-outros') then
+    insert into categories (name, theme, position)
+      select 'Outros', 'verde-escuro', coalesce(max(position) + 1, 0) from categories;
+    insert into schema_marks (name) values ('cardapio-categoria-outros');
+  end if;
 end $$;
