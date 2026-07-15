@@ -1,0 +1,122 @@
+/* Estilo das páginas públicas (linktree e avisos). As cores vêm do tema
+   configurado no admin via CSS vars. */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: linear-gradient(160deg, #0f0c29 0%, #1a1a2e 50%, #24243e 100%);
+  --text: #f5f5f7;
+  --button: rgba(255, 255, 255, 0.12);
+  --button-text: #ffffff;
+}
+
+html, body { min-height: 100%; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg) fixed;
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+}
+
+.page {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 48px 20px calc(32px + env(safe-area-inset-bottom));
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.avatar {
+  width: 92px;
+  height: 92px;
+  border-radius: 50%;
+  background: var(--button);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 46px;
+  margin-bottom: 16px;
+}
+
+.title { font-size: 26px; font-weight: 800; text-align: center; }
+
+.subtitle {
+  margin-top: 6px;
+  font-size: 15px;
+  opacity: 0.8;
+  text-align: center;
+  max-width: 40ch;
+}
+
+.links { width: 100%; margin-top: 28px; display: flex; flex-direction: column; gap: 14px; }
+
+.link-btn-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 16px 18px;
+  border-radius: 14px;
+  background: var(--button);
+  color: var(--button-text);
+  text-decoration: none;
+  font-size: 16px;
+  font-weight: 600;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: transform 0.12s ease, filter 0.12s ease;
+}
+
+.link-btn-card:active { transform: scale(0.98); }
+.link-btn-card:hover { filter: brightness(1.12); }
+
+.link-emoji { font-size: 22px; width: 28px; text-align: center; }
+.link-label { flex: 1; text-align: center; margin-right: 28px; }
+
+.state-msg { margin-top: 60px; text-align: center; opacity: 0.8; font-size: 15px; line-height: 1.6; }
+.state-msg .e-emoji { display: block; font-size: 40px; margin-bottom: 10px; }
+
+.foot {
+  margin-top: auto;
+  padding-top: 40px;
+  font-size: 12px;
+  opacity: 0.45;
+  text-align: center;
+}
+.foot a { color: inherit; text-decoration: none; }
+
+/* ---- avisos ---- */
+
+.avisos-head {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 22px;
+}
+.avisos-head h1 { font-size: 22px; flex: 1; }
+
+.back-link {
+  color: inherit;
+  text-decoration: none;
+  font-size: 14px;
+  opacity: 0.75;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: var(--button);
+}
+
+.aviso-card {
+  width: 100%;
+  background: var(--button);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 16px 18px;
+  margin-bottom: 14px;
+}
+
+.aviso-title { font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+.aviso-pin { font-size: 13px; }
+.aviso-body { margin-top: 8px; font-size: 14.5px; line-height: 1.55; opacity: 0.9; white-space: pre-wrap; }
+.aviso-date { margin-top: 10px; font-size: 12px; opacity: 0.55; }

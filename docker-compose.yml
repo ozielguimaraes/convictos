@@ -1,0 +1,22 @@
+# Deploy no VPS (Ubuntu/Coolify). O banco NÃO sobe aqui: a app usa o Postgres
+# já existente no servidor via DATABASE_URL (definida no ambiente/Coolify —
+# nunca commitada).
+services:
+  app:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      PORT: 3001
+      DATABASE_URL: ${DATABASE_URL}
+      APP_URL: ${APP_URL:-https://convictos.querc.app}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-Convictos <no-reply@querc.app>}
+    # permite alcançar um Postgres que roda direto no host do VPS
+    # (DATABASE_URL=postgres://user:senha@host.docker.internal:5432/convictos)
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
