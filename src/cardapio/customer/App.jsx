@@ -49,9 +49,20 @@ function App() {
   const [confirm, setConfirm] = useState(null);
   const [activeCat, setActiveCat] = useState(null);
   const [bumpId, setBumpId] = useState(null);
+  const [search, setSearch] = useState("");
   const sectionRefs = useRef({});
 
   const categorias = menu ? menu.categorias : [];
+
+  // Busca sem acento/caixa; categorias sem resultado somem da lista e das pílulas.
+  const norm = (s) => String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  const query = norm(search.trim());
+  const visibleCategorias = useMemo(() => {
+    if (!query) return categorias;
+    return categorias
+      .map((c) => ({ ...c, itens: c.itens.filter((it) => norm(it.nome + " " + (it.desc || "")).includes(query)) }))
+      .filter((c) => c.itens.length > 0);
+  }, [categorias, query]);
 
   useEffect(() => {
     localStorage.setItem(CART_KEY, JSON.stringify(cart));
@@ -95,8 +106,8 @@ function App() {
   useEffect(() => {
     const onScroll = () => {
       const y = window.scrollY + 140;
-      let cur = categorias[0]?.id;
-      categorias.forEach((c) => {
+      let cur = visibleCategorias[0]?.id;
+      visibleCategorias.forEach((c) => {
         const el = sectionRefs.current[c.id];
         if (el && el.offsetTop <= y) cur = c.id;
       });
@@ -105,7 +116,7 @@ function App() {
     window.addEventListener("scroll", onScroll, { passive: true });
     onScroll();
     return () => window.removeEventListener("scroll", onScroll);
-  }, [menu]);
+  }, [menu, visibleCategorias]);
 
   const goToCat = (id) => {
     const el = sectionRefs.current[id];
@@ -151,17 +162,32 @@ function App() {
       </header>
 
       {status === "ready" && categorias.length > 0 && (
-        <nav className="nav">
-          {categorias.map((c) => (
-            <button
-              key={c.id}
-              className={"pill" + (activeCat === c.id ? " active" : "")}
-              onClick={() => goToCat(c.id)}
-            >
-              {c.nome}
-            </button>
-          ))}
-        </nav>
+        <div className="topbar">
+          <div className="search-wrap">
+            <span className="search-icon">🔍</span>
+            <input
+              type="search"
+              className="search-input"
+              placeholder="Buscar no cardápio…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+            {search && (
+              <button className="search-clear" onClick={() => setSearch("")} aria-label="Limpar busca">✕</button>
+            )}
+          </div>
+          <nav className="nav">
+            {visibleCategorias.map((c) => (
+              <button
+                key={c.id}
+                className={"pill" + (activeCat === c.id ? " active" : "")}
+                onClick={() => goToCat(c.id)}
+              >
+                {c.nome}
+              </button>
+            ))}
+          </nav>
+        </div>
       )}
 
       <main className="menu">
@@ -177,8 +203,11 @@ function App() {
         {status === "ready" && categorias.length === 0 && (
           <div className="state-msg"><span className="e-emoji">🍽️</span>Cardápio ainda não configurado.</div>
         )}
+        {status === "ready" && query && visibleCategorias.length === 0 && (
+          <div className="state-msg"><span className="e-emoji">🔍</span>Nada encontrado para “{search.trim()}”.</div>
+        )}
 
-        {categorias.map((c) => (
+        {visibleCategorias.map((c) => (
           <section
             key={c.id}
             id={"sec-" + c.id}

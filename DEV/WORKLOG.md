@@ -1,5 +1,13 @@
 # WORKLOG
 
+## 2026-07-16 — Cardápio do cliente: busca + topo fixo
+
+- Bug de usabilidade: .nav era sticky mas o header (sticky, z-index maior)
+  cobria as pílulas ao rolar. Agora a marca rola com a página e um .topbar
+  fixo concentra busca + categorias.
+- Busca de produtos por nome/descrição, sem acento/caixa; categorias sem
+  resultado somem da lista e das pílulas; estado "nada encontrado" e botão ✕.
+
 ## 2026-07-16 — Cardápio como seção do painel
 
 - Editor do cardápio extraído para src/cardapio/admin/MenuEditor.jsx e usado
