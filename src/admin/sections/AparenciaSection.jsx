@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { api } from "../../lib/api.js";
 import { SCENARIOS, resolveTheme } from "../../lib/theme.js";
 
-export default function AparenciaSection({ showToast }) {
+export default function AparenciaSection({ canManage, showToast }) {
   const [profile, setProfile] = useState(null);
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -41,6 +41,7 @@ export default function AparenciaSection({ showToast }) {
 
   return (
     <React.Fragment>
+      <fieldset className="ro-fieldset" disabled={!canManage}>
       <div className="form-block">
         <h3>Identidade</h3>
         <div className="form-field">
@@ -100,11 +101,15 @@ export default function AparenciaSection({ showToast }) {
         </div>
       </div>
 
-      <div className="a-savebar">
-        <button className={"btn-save" + (dirty ? "" : " saved")} onClick={save} disabled={!dirty || saving}>
-          {saving ? "Salvando…" : dirty ? "Salvar alterações" : "Tudo salvo ✓"}
-        </button>
-      </div>
+      </fieldset>
+
+      {canManage && (
+        <div className="a-savebar">
+          <button className={"btn-save" + (dirty ? "" : " saved")} onClick={save} disabled={!dirty || saving}>
+            {saving ? "Salvando…" : dirty ? "Salvar alterações" : "Tudo salvo ✓"}
+          </button>
+        </div>
+      )}
     </React.Fragment>
   );
 }

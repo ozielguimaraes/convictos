@@ -4,17 +4,17 @@
 import { Router } from "express";
 import { query } from "../db.js";
 import { requirePermission } from "../auth.js";
-import { PERMISSIONS, isValidPermissionList } from "../permissions.js";
+import { AREAS, isValidPermissionList } from "../permissions.js";
 
 export const accessProfilesRouter = Router();
 
 const PROFILE_FIELDS = "id, name, permissions, created_at";
 
-accessProfilesRouter.get("/admin/permissions", requirePermission("usuarios", "perfis"), (req, res) => {
-  res.json(PERMISSIONS);
+accessProfilesRouter.get("/admin/permissions", requirePermission("usuarios:view", "perfis:view"), (req, res) => {
+  res.json(AREAS);
 });
 
-accessProfilesRouter.get("/admin/access-profiles", requirePermission("usuarios", "perfis"), async (req, res, next) => {
+accessProfilesRouter.get("/admin/access-profiles", requirePermission("usuarios:view", "perfis:view"), async (req, res, next) => {
   try {
     const { rows } = await query(
       `select p.${PROFILE_FIELDS.split(", ").join(", p.")}, count(u.id)::int as users_count
@@ -35,7 +35,7 @@ function profileInput(body) {
   return { name, permissions };
 }
 
-accessProfilesRouter.post("/admin/access-profiles", requirePermission("perfis"), async (req, res, next) => {
+accessProfilesRouter.post("/admin/access-profiles", requirePermission("perfis:manage"), async (req, res, next) => {
   try {
     const input = profileInput(req.body);
     if (input.error) return res.status(400).json({ error: input.error });
@@ -51,7 +51,7 @@ accessProfilesRouter.post("/admin/access-profiles", requirePermission("perfis"),
   }
 });
 
-accessProfilesRouter.put("/admin/access-profiles/:id", requirePermission("perfis"), async (req, res, next) => {
+accessProfilesRouter.put("/admin/access-profiles/:id", requirePermission("perfis:manage"), async (req, res, next) => {
   try {
     const input = profileInput(req.body);
     if (input.error) return res.status(400).json({ error: input.error });
@@ -67,7 +67,7 @@ accessProfilesRouter.put("/admin/access-profiles/:id", requirePermission("perfis
 });
 
 // Usuários do perfil ficam sem perfil (profile_id vira null via FK).
-accessProfilesRouter.delete("/admin/access-profiles/:id", requirePermission("perfis"), async (req, res, next) => {
+accessProfilesRouter.delete("/admin/access-profiles/:id", requirePermission("perfis:manage"), async (req, res, next) => {
   try {
     const { rowCount } = await query("delete from access_profiles where id = $1", [req.params.id]);
     if (!rowCount) return res.status(404).json({ error: "perfil não encontrado" });

@@ -1,5 +1,17 @@
 # WORKLOG
 
+## 2026-07-16 — Permissões granulares (Ver/Editar por área)
+
+- Cada área do catálogo virou "<area>:view" e "<area>:manage" (manage implica
+  view — expansão em expandPermissions). GETs exigem :view; mutações, :manage.
+- Migração automática no schema: permissões antigas sem nível viram :manage
+  (era o comportamento anterior). Gestor migrado sem intervenção.
+- UI: menu entra com :view; sem :manage a seção fica somente leitura (banner
+  "👁", formulários desabilitados via fieldset, botões de criação/exclusão
+  ocultos; em ações a navegação para o detalhe continua). Cardápio admin idem.
+- Novo PermissionPicker (chips Ver/Editar por área) usado em Perfis e nos
+  acessos extras de Usuários.
+
 ## 2026-07-16 — Níveis de acesso dinâmicos (RBAC)
 
 - Catálogo de permissões em server/permissions.js (links, aparencia, avisos,

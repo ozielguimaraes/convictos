@@ -40,7 +40,7 @@ convictosRouter.get("/avisos", async (req, res, next) => {
 
 // ---------- admin ----------
 
-convictosRouter.put("/admin/profile", requirePermission("aparencia"), async (req, res, next) => {
+convictosRouter.put("/admin/profile", requirePermission("aparencia:manage"), async (req, res, next) => {
   try {
     const { title, subtitle, avatar_emoji, theme } = req.body;
     if (!title || typeof title !== "string") return res.status(400).json({ error: "título obrigatório" });
@@ -55,7 +55,7 @@ convictosRouter.put("/admin/profile", requirePermission("aparencia"), async (req
   }
 });
 
-convictosRouter.get("/admin/links", requirePermission("links"), async (req, res, next) => {
+convictosRouter.get("/admin/links", requirePermission("links:view"), async (req, res, next) => {
   try {
     const { rows } = await query(
       "select id, label, url, emoji, visible from links order by position"
@@ -68,7 +68,7 @@ convictosRouter.get("/admin/links", requirePermission("links"), async (req, res,
 
 // Substitui a lista inteira de links de forma atômica, atualizando pelo id
 // (mesma estratégia do replace_menu do cardapio-on: ids existentes são mantidos).
-convictosRouter.put("/admin/links", requirePermission("links"), async (req, res, next) => {
+convictosRouter.put("/admin/links", requirePermission("links:manage"), async (req, res, next) => {
   try {
     const list = req.body;
     if (!Array.isArray(list)) return res.status(400).json({ error: "esperado um array de links" });
@@ -106,7 +106,7 @@ convictosRouter.put("/admin/links", requirePermission("links"), async (req, res,
   }
 });
 
-convictosRouter.get("/admin/avisos", requirePermission("avisos"), async (req, res, next) => {
+convictosRouter.get("/admin/avisos", requirePermission("avisos:view"), async (req, res, next) => {
   try {
     const { rows } = await query(
       "select id, title, body, pinned, published, created_at, updated_at from avisos order by pinned desc, created_at desc"
@@ -117,7 +117,7 @@ convictosRouter.get("/admin/avisos", requirePermission("avisos"), async (req, re
   }
 });
 
-convictosRouter.post("/admin/avisos", requirePermission("avisos"), async (req, res, next) => {
+convictosRouter.post("/admin/avisos", requirePermission("avisos:manage"), async (req, res, next) => {
   try {
     const { title, body, pinned, published } = req.body;
     if (!title) return res.status(400).json({ error: "título obrigatório" });
@@ -132,7 +132,7 @@ convictosRouter.post("/admin/avisos", requirePermission("avisos"), async (req, r
   }
 });
 
-convictosRouter.put("/admin/avisos/:id", requirePermission("avisos"), async (req, res, next) => {
+convictosRouter.put("/admin/avisos/:id", requirePermission("avisos:manage"), async (req, res, next) => {
   try {
     const { title, body, pinned, published } = req.body;
     if (!title) return res.status(400).json({ error: "título obrigatório" });
@@ -148,7 +148,7 @@ convictosRouter.put("/admin/avisos/:id", requirePermission("avisos"), async (req
   }
 });
 
-convictosRouter.delete("/admin/avisos/:id", requirePermission("avisos"), async (req, res, next) => {
+convictosRouter.delete("/admin/avisos/:id", requirePermission("avisos:manage"), async (req, res, next) => {
   try {
     const { rowCount } = await query("delete from avisos where id = $1", [req.params.id]);
     if (!rowCount) return res.status(404).json({ error: "aviso não encontrado" });
@@ -185,13 +185,13 @@ async function accessInput(body, caller) {
     if (!rows.length) return { error: "perfil não encontrado" };
     profilePerms = rows[0].permissions;
   }
-  if (caller.role !== "super_admin" && [...extra_permissions, ...profilePerms].includes("perfis")) {
+  if (caller.role !== "super_admin" && [...extra_permissions, ...profilePerms].some((k) => k.startsWith("perfis:"))) {
     return { error: "somente o super admin concede acesso a perfis" };
   }
   return { profile_id, extra_permissions };
 }
 
-convictosRouter.get("/admin/users", requirePermission("usuarios"), async (req, res, next) => {
+convictosRouter.get("/admin/users", requirePermission("usuarios:view"), async (req, res, next) => {
   try {
     const { rows } = await query(userQuery("order by u.created_at"));
     res.json(rows);
@@ -200,7 +200,7 @@ convictosRouter.get("/admin/users", requirePermission("usuarios"), async (req, r
   }
 });
 
-convictosRouter.post("/admin/users", requirePermission("usuarios"), async (req, res, next) => {
+convictosRouter.post("/admin/users", requirePermission("usuarios:manage"), async (req, res, next) => {
   try {
     const email = String(req.body.email || "").toLowerCase().trim();
     const name = String(req.body.name || "").trim();
@@ -225,7 +225,7 @@ convictosRouter.post("/admin/users", requirePermission("usuarios"), async (req, 
   }
 });
 
-convictosRouter.put("/admin/users/:id", requirePermission("usuarios"), async (req, res, next) => {
+convictosRouter.put("/admin/users/:id", requirePermission("usuarios:manage"), async (req, res, next) => {
   try {
     const id = Number(req.params.id);
     const name = String(req.body.name || "").trim();
@@ -257,7 +257,7 @@ convictosRouter.put("/admin/users/:id", requirePermission("usuarios"), async (re
   }
 });
 
-convictosRouter.delete("/admin/users/:id", requirePermission("usuarios"), async (req, res, next) => {
+convictosRouter.delete("/admin/users/:id", requirePermission("usuarios:manage"), async (req, res, next) => {
   try {
     const id = Number(req.params.id);
     if (id === req.admin.id) return res.status(400).json({ error: "não é possível excluir a própria conta" });

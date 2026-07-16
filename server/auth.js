@@ -3,7 +3,7 @@ import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import { query } from "./db.js";
 import { sendLoginEmail } from "./mail.js";
-import { PERMISSION_KEYS } from "./permissions.js";
+import { PERMISSION_KEYS, expandPermissions } from "./permissions.js";
 
 const SESSION_COOKIE = "convictos_session";
 const SESSION_DAYS = 30;
@@ -44,8 +44,10 @@ export async function requireAdmin(req, res, next) {
     const u = rows[0];
     const effective = u.role === "super_admin"
       ? PERMISSION_KEYS
-      : [...new Set([...(u.profile_permissions || []), ...(u.extra_permissions || [])])]
-          .filter((k) => PERMISSION_KEYS.includes(k));
+      : expandPermissions(
+          [...new Set([...(u.profile_permissions || []), ...(u.extra_permissions || [])])]
+            .filter((k) => PERMISSION_KEYS.includes(k))
+        );
     req.admin = {
       id: u.id,
       email: u.email,

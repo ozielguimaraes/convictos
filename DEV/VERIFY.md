@@ -1,5 +1,15 @@
 # VERIFY
 
+## 2026-07-16 — permissões granulares
+
+- Perfil "Observador de ações" (acoes:view): lista e detalhe de ações 200;
+  criar ação/vendedor 403; links e avisos 403; /me = ["acoes:view"].
+- Extra acoes:manage: /me expande para manage+view; GET 200 e POST 201.
+- Migração: Gestor virou {…:manage} automaticamente ao rodar o schema.
+- Navegador: observador vê só "Ações entre amigos" com banner de leitura,
+  totais visíveis, sem botões de criar/excluir e toggles desabilitados;
+  super admin vê o picker Ver/Editar por área nos Perfis.
+
 ## 2026-07-16 — RBAC
 
 - Matriz via curl: gestora (perfil Gestor) lista/cria usuários (200/201),

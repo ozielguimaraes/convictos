@@ -1,24 +1,11 @@
 /* Usuários: cria contas informando o perfil de acesso e permite conceder
-   acessos extras além do perfil. Ninguém cria super admin; quem não é super
-   admin não vê nem concede o acesso "perfis". */
+   acessos extras além do perfil (por área, nos níveis Ver/Editar). Ninguém
+   cria super admin; quem não é super admin não vê nem concede "perfis". */
 import React, { useState, useEffect } from "react";
 import { api } from "../../lib/api.js";
+import PermissionPicker from "../PermissionPicker.jsx";
 
-function ExtraChips({ catalog, selected, onToggle }) {
-  return (
-    <div className="perm-grid">
-      {catalog.map((p) => (
-        <button key={p.key}
-          className={"pill-toggle" + (selected.includes(p.key) ? " on" : "")}
-          onClick={() => onToggle(p.key)}>
-          {p.label}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-function UserCard({ me, catalog, profiles, user, onSaved, onDeleted, showToast }) {
+function UserCard({ me, areas, profiles, user, canManage, onSaved, onDeleted, showToast }) {
   const [draft, setDraft] = useState({ profile_id: user.profile_id, extra_permissions: user.extra_permissions || [] });
   const [saving, setSaving] = useState(false);
   const isSuper = user.role === "super_admin";
@@ -26,13 +13,6 @@ function UserCard({ me, catalog, profiles, user, onSaved, onDeleted, showToast }
   const dirty = draft.profile_id !== user.profile_id
     || draft.extra_permissions.length !== (user.extra_permissions || []).length
     || draft.extra_permissions.some((k) => !(user.extra_permissions || []).includes(k));
-
-  const toggleExtra = (key) => setDraft((d) => ({
-    ...d,
-    extra_permissions: d.extra_permissions.includes(key)
-      ? d.extra_permissions.filter((k) => k !== key)
-      : [...d.extra_permissions, key],
-  }));
 
   const save = async () => {
     setSaving(true);
@@ -89,7 +69,7 @@ function UserCard({ me, catalog, profiles, user, onSaved, onDeleted, showToast }
       {isSuper ? (
         <div className="aviso-meta">Acesso total — perfis e extras não se aplicam.</div>
       ) : (
-        <React.Fragment>
+        <fieldset className="ro-fieldset" disabled={!canManage}>
           <div className="form-field" style={{ marginTop: 10 }}>
             <label>Perfil de acesso</label>
             <select className="perfil-select" value={draft.profile_id ?? ""}
@@ -100,27 +80,30 @@ function UserCard({ me, catalog, profiles, user, onSaved, onDeleted, showToast }
           </div>
           <div className="form-field">
             <label>Acessos extras (além do perfil)</label>
-            <ExtraChips catalog={catalog} selected={draft.extra_permissions} onToggle={toggleExtra} />
+            <PermissionPicker areas={areas} selected={draft.extra_permissions} disabled={!canManage}
+              onChange={(extra_permissions) => setDraft((d) => ({ ...d, extra_permissions }))} />
           </div>
-        </React.Fragment>
+        </fieldset>
       )}
 
-      <div className="aviso-actions">
-        <button className="btn-small-danger" style={{ marginLeft: 0 }} onClick={resetPassword}>Redefinir senha</button>
-        {!isSuper && user.id !== me.id && (
-          <button className="btn-small-danger" onClick={del}>Excluir</button>
-        )}
-        {!isSuper && (
-          <button className="btn-small-save" style={{ marginLeft: "auto" }} onClick={save} disabled={!dirty || saving}>
-            {saving ? "Salvando…" : dirty ? "Salvar acessos" : "Salvo ✓"}
-          </button>
-        )}
-      </div>
+      {canManage && (
+        <div className="aviso-actions">
+          <button className="btn-small-danger" style={{ marginLeft: 0 }} onClick={resetPassword}>Redefinir senha</button>
+          {!isSuper && user.id !== me.id && (
+            <button className="btn-small-danger" onClick={del}>Excluir</button>
+          )}
+          {!isSuper && (
+            <button className="btn-small-save" style={{ marginLeft: "auto" }} onClick={save} disabled={!dirty || saving}>
+              {saving ? "Salvando…" : dirty ? "Salvar acessos" : "Salvo ✓"}
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
 
-export default function UsuariosSection({ me, showToast }) {
+export default function UsuariosSection({ me, canManage, showToast }) {
   const [users, setUsers] = useState(null);
   const [catalog, setCatalog] = useState(null);
   const [profiles, setProfiles] = useState(null);
@@ -139,10 +122,10 @@ export default function UsuariosSection({ me, showToast }) {
 
   if (!users || !catalog || !profiles) return <div className="a-loading">Carregando usuários…</div>;
 
-  // Quem não é super admin não concede "perfis": some o chip e os perfis que o contêm.
+  // Quem não é super admin não concede "perfis": somem a área e os perfis que a contêm.
   const isSuper = me.role === "super_admin";
-  const grantableCatalog = isSuper ? catalog : catalog.filter((p) => p.key !== "perfis");
-  const grantableProfiles = isSuper ? profiles : profiles.filter((p) => !p.permissions.includes("perfis"));
+  const grantableAreas = isSuper ? catalog : catalog.filter((a) => a.key !== "perfis");
+  const grantableProfiles = isSuper ? profiles : profiles.filter((p) => !p.permissions.some((k) => k.startsWith("perfis:")));
 
   const add = async () => {
     if (!draft.email.trim()) { showToast("E-mail obrigatório", true); return; }
@@ -161,6 +144,7 @@ export default function UsuariosSection({ me, showToast }) {
 
   return (
     <React.Fragment>
+      {canManage && (
       <div className="form-block">
         <h3>Novo usuário</h3>
         <div className="form-field">
@@ -187,11 +171,12 @@ export default function UsuariosSection({ me, showToast }) {
           {saving ? "Criando…" : "+ Criar usuário"}
         </button>
       </div>
+      )}
 
       <div className="form-block">
         <h3>Usuários</h3>
         {users.map((u) => (
-          <UserCard key={u.id} me={me} catalog={grantableCatalog} profiles={grantableProfiles} user={u}
+          <UserCard key={u.id} me={me} areas={grantableAreas} profiles={grantableProfiles} user={u} canManage={canManage}
             onSaved={(saved) => setUsers((list) => list.map((x) => (x.id === saved.id ? saved : x)))}
             onDeleted={(deleted) => setUsers((list) => list.filter((x) => x.id !== deleted.id))}
             showToast={showToast} />

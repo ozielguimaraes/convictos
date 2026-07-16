@@ -8,7 +8,7 @@ import Login from "../../components/Login.jsx";
 function clone(o) { return JSON.parse(JSON.stringify(o)); }
 function uid() { return "item-" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
 
-function Editor({ onLogout }) {
+function Editor({ canManage, onLogout }) {
   const [draft, setDraft] = useState(null);
   const [loadErr, setLoadErr] = useState("");
   const [dirty, setDirty] = useState(false);
@@ -103,12 +103,17 @@ function Editor({ onLogout }) {
       </header>
 
       <div className="a-body">
-        <div className="a-note">
-          <b>Como funciona:</b> tudo que você salvar aqui fica guardado <b>no servidor</b> e
-          passa a aparecer <b>para todos os celulares</b> que abrirem o cardápio. As alterações
-          valem na hora (o cardápio recarrega ao ser reaberto). Defina os preços <b>antes</b> de
-          gerar o QR Code do evento.
-        </div>
+        {canManage ? (
+          <div className="a-note">
+            <b>Como funciona:</b> tudo que você salvar aqui fica guardado <b>no servidor</b> e
+            passa a aparecer <b>para todos os celulares</b> que abrirem o cardápio. As alterações
+            valem na hora (o cardápio recarrega ao ser reaberto). Defina os preços <b>antes</b> de
+            gerar o QR Code do evento.
+          </div>
+        ) : (
+          <div className="a-note">👁 Você tem acesso somente de visualização do cardápio.</div>
+        )}
+        <fieldset disabled={!canManage} style={{ border: "none", padding: 0, margin: 0, minWidth: 0 }}>
 
         {loadErr && <div className="a-note" style={{ background: "#fbe9e7", borderColor: "#f5c6cb", color: "#a02012" }}>Erro ao carregar: {loadErr}</div>}
         {!draft && !loadErr && <div className="a-loading">Carregando cardápio…</div>}
@@ -151,10 +156,11 @@ function Editor({ onLogout }) {
           </div>
         ))}
 
-        {draft && <button className="add-cat-btn" onClick={addCat}>+ Adicionar nova categoria</button>}
+        {draft && canManage && <button className="add-cat-btn" onClick={addCat}>+ Adicionar nova categoria</button>}
+        </fieldset>
       </div>
 
-      {draft && (
+      {draft && canManage && (
         <div className="a-savebar">
           <button className="btn-reset" onClick={reset} disabled={saving}>Restaurar original</button>
           <button className={"btn-save" + (dirty ? "" : " saved")} onClick={save} disabled={!dirty || saving}>
@@ -170,10 +176,14 @@ function Editor({ onLogout }) {
 
 export default function Admin() {
   const [phase, setPhase] = useState("checking"); // checking | out | denied | in
+  const [canManage, setCanManage] = useState(false);
 
   const check = () =>
     api.get("/api/auth/me")
-      .then((me) => setPhase(me.permissions.includes("cardapio") ? "in" : "denied"))
+      .then((me) => {
+        setCanManage(me.permissions.includes("cardapio:manage"));
+        setPhase(me.permissions.includes("cardapio:view") ? "in" : "denied");
+      })
       .catch(() => setPhase("out"));
 
   useEffect(() => { check(); }, []);
@@ -195,5 +205,5 @@ export default function Admin() {
       </div>
     );
   }
-  return <Editor onLogout={logout} />;
+  return <Editor canManage={canManage} onLogout={logout} />;
 }

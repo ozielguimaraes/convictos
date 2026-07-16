@@ -11,8 +11,8 @@ import AcoesSection from "./sections/AcoesSection.jsx";
 import UsuariosSection from "./sections/UsuariosSection.jsx";
 import PerfisSection from "./sections/PerfisSection.jsx";
 
-// Cada seção corresponde a uma permissão do catálogo do servidor; o menu só
-// mostra o que /api/auth/me liberar.
+// Cada seção corresponde a uma área do catálogo do servidor, com níveis
+// "<area>:view" (entra no menu) e "<area>:manage" (pode alterar).
 const SECTIONS = [
   { key: "links", label: "Links", emoji: "🔗" },
   { key: "aparencia", label: "Aparência", emoji: "🎨" },
@@ -23,12 +23,13 @@ const SECTIONS = [
 ];
 
 function Panel({ me, onLogout }) {
-  const sections = SECTIONS.filter((s) => me.permissions.includes(s.key));
+  const sections = SECTIONS.filter((s) => me.permissions.includes(s.key + ":view"));
   const [section, setSection] = useState(sections[0]?.key || "");
   const [menuOpen, setMenuOpen] = useState(false);
   const [toast, showToast] = useToast();
 
   const current = sections.find((s) => s.key === section);
+  const canManage = (key) => me.permissions.includes(key + ":manage");
 
   const pick = (key) => {
     setSection(key);
@@ -47,7 +48,7 @@ function Panel({ me, onLogout }) {
               <span className="nav-emoji">{s.emoji}</span>{s.label}
             </button>
           ))}
-          {me.permissions.includes("cardapio") && (
+          {me.permissions.includes("cardapio:view") && (
             <a className="nav-item" href="/cardapio/admin/">
               <span className="nav-emoji">🍔</span>Cardápio<span className="nav-ext">↗</span>
             </a>
@@ -68,12 +69,15 @@ function Panel({ me, onLogout }) {
           {sections.length === 0 && (
             <div className="a-loading">Sua conta ainda não tem acesso a nenhuma seção.<br />Fale com o administrador.</div>
           )}
-          {section === "links" && <LinksSection showToast={showToast} />}
-          {section === "aparencia" && <AparenciaSection showToast={showToast} />}
-          {section === "avisos" && <AvisosSection showToast={showToast} />}
-          {section === "acoes" && <AcoesSection showToast={showToast} />}
-          {section === "usuarios" && <UsuariosSection me={me} showToast={showToast} />}
-          {section === "perfis" && <PerfisSection showToast={showToast} />}
+          {current && !canManage(current.key) && (
+            <div className="ro-note">👁 Você tem acesso somente de visualização nesta seção.</div>
+          )}
+          {section === "links" && <LinksSection canManage={canManage("links")} showToast={showToast} />}
+          {section === "aparencia" && <AparenciaSection canManage={canManage("aparencia")} showToast={showToast} />}
+          {section === "avisos" && <AvisosSection canManage={canManage("avisos")} showToast={showToast} />}
+          {section === "acoes" && <AcoesSection canManage={canManage("acoes")} showToast={showToast} />}
+          {section === "usuarios" && <UsuariosSection me={me} canManage={canManage("usuarios")} showToast={showToast} />}
+          {section === "perfis" && <PerfisSection canManage={canManage("perfis")} showToast={showToast} />}
         </div>
       </div>
 

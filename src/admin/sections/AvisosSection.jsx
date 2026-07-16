@@ -68,7 +68,7 @@ function AvisoEditor({ aviso, onSaved, onDeleted, showToast }) {
   );
 }
 
-export default function AvisosSection({ showToast }) {
+export default function AvisosSection({ canManage, showToast }) {
   const [avisos, setAvisos] = useState(null);
 
   useEffect(() => {
@@ -89,11 +89,13 @@ export default function AvisosSection({ showToast }) {
 
   return (
     <React.Fragment>
-      <button className="add-cat-btn" style={{ marginBottom: 16 }} onClick={addNew}>+ Novo aviso</button>
+      {canManage && <button className="add-cat-btn" style={{ marginBottom: 16 }} onClick={addNew}>+ Novo aviso</button>}
       {avisos.length === 0 && <div className="a-loading">Nenhum aviso ainda.</div>}
-      {avisos.map((a) => (
-        <AvisoEditor key={a.id || a._key} aviso={a} onSaved={onSaved} onDeleted={onDeleted} showToast={showToast} />
-      ))}
+      <fieldset className="ro-fieldset" disabled={!canManage}>
+        {avisos.map((a) => (
+          <AvisoEditor key={a.id || a._key} aviso={a} onSaved={onSaved} onDeleted={onDeleted} showToast={showToast} />
+        ))}
+      </fieldset>
     </React.Fragment>
   );
 }

@@ -49,8 +49,20 @@ alter table admin_users add column if not exists extra_permissions text[] not nu
 -- Perfil Gestor: tudo, exceto gerenciar perfis. Semeado uma vez pelo nome —
 -- edições posteriores do super admin não são sobrescritas.
 insert into access_profiles (name, permissions)
-  values ('Gestor', '{links,aparencia,avisos,acoes,cardapio,usuarios}')
+  values ('Gestor', '{links:manage,aparencia:manage,avisos:manage,acoes:manage,cardapio:manage,usuarios:manage}')
   on conflict (name) do nothing;
+
+-- Migração das permissões antigas (sem nível) para "<area>:manage" — antes
+-- da granularidade ver/editar, ter a área significava acesso total.
+update access_profiles set permissions = (
+  select coalesce(array_agg(distinct case when p like '%:%' then p else p || ':manage' end), '{}')
+  from unnest(permissions) p
+) where exists (select 1 from unnest(permissions) p where p not like '%:%');
+
+update admin_users set extra_permissions = (
+  select coalesce(array_agg(distinct case when p like '%:%' then p else p || ':manage' end), '{}')
+  from unnest(extra_permissions) p
+) where exists (select 1 from unnest(extra_permissions) p where p not like '%:%');
 
 -- Tokens de login por e-mail: o mesmo registro serve o OTP de 6 dígitos
 -- e o link mágico (magic_token), enviados no mesmo e-mail.

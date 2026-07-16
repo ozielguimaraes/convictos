@@ -3,7 +3,7 @@ import { api } from "../../lib/api.js";
 
 function clone(o) { return JSON.parse(JSON.stringify(o)); }
 
-export default function LinksSection({ showToast }) {
+export default function LinksSection({ canManage, showToast }) {
   const [links, setLinks] = useState(null);
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -43,6 +43,7 @@ export default function LinksSection({ showToast }) {
 
   return (
     <React.Fragment>
+      <fieldset className="ro-fieldset" disabled={!canManage}>
       <div className="form-block">
         <h3>Links da página inicial</h3>
         {links.map((l, i) => (
@@ -62,14 +63,17 @@ export default function LinksSection({ showToast }) {
             </div>
           </div>
         ))}
-        <button className="add-item-btn" onClick={add}>+ Adicionar link</button>
+        {canManage && <button className="add-item-btn" onClick={add}>+ Adicionar link</button>}
       </div>
+      </fieldset>
 
-      <div className="a-savebar">
-        <button className={"btn-save" + (dirty ? "" : " saved")} onClick={save} disabled={!dirty || saving}>
-          {saving ? "Salvando…" : dirty ? "Salvar alterações" : "Tudo salvo ✓"}
-        </button>
-      </div>
+      {canManage && (
+        <div className="a-savebar">
+          <button className={"btn-save" + (dirty ? "" : " saved")} onClick={save} disabled={!dirty || saving}>
+            {saving ? "Salvando…" : dirty ? "Salvar alterações" : "Tudo salvo ✓"}
+          </button>
+        </div>
+      )}
     </React.Fragment>
   );
 }

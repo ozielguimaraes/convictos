@@ -5,7 +5,8 @@ import { Router } from "express";
 import { query } from "../db.js";
 import { requirePermission } from "../auth.js";
 
-const requireAcoes = requirePermission("acoes");
+const viewAcoes = requirePermission("acoes:view");
+const manageAcoes = requirePermission("acoes:manage");
 
 export const acoesRouter = Router();
 
@@ -34,7 +35,7 @@ async function findOverlap(acaoId, start, blockSize, ignoreBlockId) {
 
 // ---------- ações ----------
 
-acoesRouter.get("/admin/acoes", requireAcoes, async (req, res, next) => {
+acoesRouter.get("/admin/acoes", viewAcoes, async (req, res, next) => {
   try {
     // Pendente por bloco: sem entrega o vendedor deve o bloco inteiro; após a
     // entrega, deve o que vendeu — sempre descontando o recebido (mín. zero).
@@ -76,7 +77,7 @@ function acaoInput(body) {
   return { name, number_price, block_size, public_ranking, show_sold_numbers };
 }
 
-acoesRouter.post("/admin/acoes", requireAcoes, async (req, res, next) => {
+acoesRouter.post("/admin/acoes", manageAcoes, async (req, res, next) => {
   try {
     const input = acaoInput(req.body);
     if (input.error) return res.status(400).json({ error: input.error });
@@ -91,7 +92,7 @@ acoesRouter.post("/admin/acoes", requireAcoes, async (req, res, next) => {
   }
 });
 
-acoesRouter.put("/admin/acoes/:id", requireAcoes, async (req, res, next) => {
+acoesRouter.put("/admin/acoes/:id", manageAcoes, async (req, res, next) => {
   try {
     const input = acaoInput(req.body);
     if (input.error) return res.status(400).json({ error: input.error });
@@ -107,7 +108,7 @@ acoesRouter.put("/admin/acoes/:id", requireAcoes, async (req, res, next) => {
   }
 });
 
-acoesRouter.delete("/admin/acoes/:id", requireAcoes, async (req, res, next) => {
+acoesRouter.delete("/admin/acoes/:id", manageAcoes, async (req, res, next) => {
   try {
     const { rowCount } = await query("delete from acoes where id = $1", [req.params.id]);
     if (!rowCount) return res.status(404).json({ error: "ação não encontrada" });
@@ -118,7 +119,7 @@ acoesRouter.delete("/admin/acoes/:id", requireAcoes, async (req, res, next) => {
 });
 
 // Detalhe: ação + vendedores com seus blocos.
-acoesRouter.get("/admin/acoes/:id", requireAcoes, async (req, res, next) => {
+acoesRouter.get("/admin/acoes/:id", viewAcoes, async (req, res, next) => {
   try {
     const acao = await getAcao(req.params.id);
     if (!acao) return res.status(404).json({ error: "ação não encontrada" });
@@ -192,7 +193,7 @@ acoesRouter.get("/acoes/:id/ranking", async (req, res, next) => {
 
 // ---------- vendedores ----------
 
-acoesRouter.post("/admin/acoes/:id/sellers", requireAcoes, async (req, res, next) => {
+acoesRouter.post("/admin/acoes/:id/sellers", manageAcoes, async (req, res, next) => {
   try {
     const name = String(req.body.name || "").trim();
     if (!name) return res.status(400).json({ error: "nome obrigatório" });
@@ -208,7 +209,7 @@ acoesRouter.post("/admin/acoes/:id/sellers", requireAcoes, async (req, res, next
   }
 });
 
-acoesRouter.put("/admin/sellers/:id", requireAcoes, async (req, res, next) => {
+acoesRouter.put("/admin/sellers/:id", manageAcoes, async (req, res, next) => {
   try {
     const name = String(req.body.name || "").trim();
     if (!name) return res.status(400).json({ error: "nome obrigatório" });
@@ -223,7 +224,7 @@ acoesRouter.put("/admin/sellers/:id", requireAcoes, async (req, res, next) => {
   }
 });
 
-acoesRouter.delete("/admin/sellers/:id", requireAcoes, async (req, res, next) => {
+acoesRouter.delete("/admin/sellers/:id", manageAcoes, async (req, res, next) => {
   try {
     const { rowCount } = await query("delete from acao_sellers where id = $1", [req.params.id]);
     if (!rowCount) return res.status(404).json({ error: "vendedor não encontrado" });
@@ -248,7 +249,7 @@ function blockInput(body, blockSize) {
   return { start_number, sold_count, received, returned };
 }
 
-acoesRouter.post("/admin/sellers/:id/blocks", requireAcoes, async (req, res, next) => {
+acoesRouter.post("/admin/sellers/:id/blocks", manageAcoes, async (req, res, next) => {
   try {
     const seller = await query("select id, acao_id from acao_sellers where id = $1", [req.params.id]);
     if (!seller.rows.length) return res.status(404).json({ error: "vendedor não encontrado" });
@@ -272,7 +273,7 @@ acoesRouter.post("/admin/sellers/:id/blocks", requireAcoes, async (req, res, nex
   }
 });
 
-acoesRouter.put("/admin/blocks/:id", requireAcoes, async (req, res, next) => {
+acoesRouter.put("/admin/blocks/:id", manageAcoes, async (req, res, next) => {
   try {
     const cur = await query("select id, acao_id from acao_blocks where id = $1", [req.params.id]);
     if (!cur.rows.length) return res.status(404).json({ error: "bloco não encontrado" });
@@ -296,7 +297,7 @@ acoesRouter.put("/admin/blocks/:id", requireAcoes, async (req, res, next) => {
   }
 });
 
-acoesRouter.delete("/admin/blocks/:id", requireAcoes, async (req, res, next) => {
+acoesRouter.delete("/admin/blocks/:id", manageAcoes, async (req, res, next) => {
   try {
     const { rowCount } = await query("delete from acao_blocks where id = $1", [req.params.id]);
     if (!rowCount) return res.status(404).json({ error: "bloco não encontrado" });

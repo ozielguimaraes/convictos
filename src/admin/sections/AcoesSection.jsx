@@ -28,7 +28,7 @@ function Totais({ sold, received, pending }) {
 
 /* ---------- bloco (linha editável) ---------- */
 
-function BlocoRow({ acao, block, onSaved, onDeleted, showToast }) {
+function BlocoRow({ acao, block, canManage, onSaved, onDeleted, showToast }) {
   const [sold, setSold] = useState(String(block.sold_count));
   const [received, setReceived] = useState(block.received ? String(block.received).replace(".", ",") : "");
   const [returned, setReturned] = useState(block.returned);
@@ -83,7 +83,7 @@ function BlocoRow({ acao, block, onSaved, onDeleted, showToast }) {
         <button className={"pill-toggle" + (returned ? " on" : "")} onClick={() => setReturned(!returned)}>
           {returned ? "✓ Entregue" : "📦 Com o vendedor"}
         </button>
-        <button className="icon-btn danger" onClick={del} aria-label="Excluir bloco">🗑</button>
+        {canManage && <button className="icon-btn danger" onClick={del} aria-label="Excluir bloco">🗑</button>}
       </div>
       <div className="bloco-fields">
         <label>
@@ -106,9 +106,11 @@ function BlocoRow({ acao, block, onSaved, onDeleted, showToast }) {
             ? <>Pendente: <b>{fmt(pending)}</b>{!returned && " (bloco com o vendedor)"}</>
             : "✓ acertado"}
         </span>
-        <button className="btn-small-save" onClick={save} disabled={!dirty || saving}>
-          {saving ? "Salvando…" : dirty ? "Salvar" : "Salvo ✓"}
-        </button>
+        {canManage && (
+          <button className="btn-small-save" onClick={save} disabled={!dirty || saving}>
+            {saving ? "Salvando…" : dirty ? "Salvar" : "Salvo ✓"}
+          </button>
+        )}
       </div>
     </div>
   );
@@ -116,7 +118,7 @@ function BlocoRow({ acao, block, onSaved, onDeleted, showToast }) {
 
 /* ---------- vendedor ---------- */
 
-function VendedorCard({ acao, seller, onChanged, showToast }) {
+function VendedorCard({ acao, seller, canManage, onChanged, showToast }) {
   const [adding, setAdding] = useState(false);
 
   const soldValue = seller.blocks.reduce((s, b) => s + b.sold_count * acao.number_price, 0);
@@ -144,6 +146,7 @@ function VendedorCard({ acao, seller, onChanged, showToast }) {
   };
 
   const rename = async () => {
+    if (!canManage) return;
     const name = prompt("Nome do vendedor:", seller.name);
     if (!name || name.trim() === seller.name) return;
     try {
@@ -175,24 +178,28 @@ function VendedorCard({ acao, seller, onChanged, showToast }) {
   return (
     <div className="form-block vendedor">
       <div className="vendedor-top">
-        <h3 onClick={rename} title="Toque para renomear">{seller.name}</h3>
-        <button className="cat-del" onClick={del}>Excluir</button>
+        <h3 onClick={rename} title={canManage ? "Toque para renomear" : undefined}>{seller.name}</h3>
+        {canManage && <button className="cat-del" onClick={del}>Excluir</button>}
       </div>
       <Totais sold={soldValue} received={received} pending={pending} />
       {seller.blocks.length === 0 && <div className="vendedor-empty">Nenhum bloco ainda.</div>}
-      {seller.blocks.map((b) => (
-        <BlocoRow key={b.id} acao={acao} block={b} onSaved={onBlockSaved} onDeleted={onBlockDeleted} showToast={showToast} />
-      ))}
-      <button className="add-item-btn" onClick={addBlock} disabled={adding}>
-        {adding ? "Adicionando…" : `+ Adicionar bloco (${acao.block_size} números)`}
-      </button>
+      <fieldset className="ro-fieldset" disabled={!canManage}>
+        {seller.blocks.map((b) => (
+          <BlocoRow key={b.id} acao={acao} block={b} canManage={canManage} onSaved={onBlockSaved} onDeleted={onBlockDeleted} showToast={showToast} />
+        ))}
+      </fieldset>
+      {canManage && (
+        <button className="add-item-btn" onClick={addBlock} disabled={adding}>
+          {adding ? "Adicionando…" : `+ Adicionar bloco (${acao.block_size} números)`}
+        </button>
+      )}
     </div>
   );
 }
 
 /* ---------- detalhe da ação ---------- */
 
-function AcaoDetail({ id, onBack, showToast }) {
+function AcaoDetail({ id, canManage, onBack, showToast }) {
   const [acao, setAcao] = useState(null);
   const [newSeller, setNewSeller] = useState("");
   const [adding, setAdding] = useState(false);
@@ -253,13 +260,13 @@ function AcaoDetail({ id, onBack, showToast }) {
         </div>
         <Totais sold={sold} received={received} pending={pending} />
         <div className="aviso-actions" style={{ marginTop: 0 }}>
-          <button className={"pill-toggle" + (acao.public_ranking ? " on" : "")}
+          <button className={"pill-toggle" + (acao.public_ranking ? " on" : "")} disabled={!canManage}
             onClick={() => saveFlags({ public_ranking: !acao.public_ranking },
               acao.public_ranking ? "✓ Ranking agora é privado." : "✓ Ranking público ativado!")}>
             🏆 Ranking público
           </button>
           {acao.public_ranking && (
-            <button className={"pill-toggle" + (acao.show_sold_numbers ? " on" : "")}
+            <button className={"pill-toggle" + (acao.show_sold_numbers ? " on" : "")} disabled={!canManage}
               onClick={() => saveFlags({ show_sold_numbers: !acao.show_sold_numbers },
                 acao.show_sold_numbers ? "✓ Ranking mostra só a posição." : "✓ Ranking mostra números vendidos.")}>
               🔢 Mostrar números vendidos
@@ -274,27 +281,29 @@ function AcaoDetail({ id, onBack, showToast }) {
       </div>
 
       {acao.sellers.map((s) => (
-        <VendedorCard key={s.id} acao={acao} seller={s} onChanged={setSellers} showToast={showToast} />
+        <VendedorCard key={s.id} acao={acao} seller={s} canManage={canManage} onChanged={setSellers} showToast={showToast} />
       ))}
 
-      <div className="form-block">
-        <h3>Novo vendedor</h3>
-        <div className="form-field">
-          <input type="text" value={newSeller} placeholder="Nome de quem vai vender"
-            onChange={(e) => setNewSeller(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && addSeller()} />
+      {canManage && (
+        <div className="form-block">
+          <h3>Novo vendedor</h3>
+          <div className="form-field">
+            <input type="text" value={newSeller} placeholder="Nome de quem vai vender"
+              onChange={(e) => setNewSeller(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && addSeller()} />
+          </div>
+          <button className="add-cat-btn" onClick={addSeller} disabled={adding}>
+            {adding ? "Adicionando…" : "+ Adicionar vendedor"}
+          </button>
         </div>
-        <button className="add-cat-btn" onClick={addSeller} disabled={adding}>
-          {adding ? "Adicionando…" : "+ Adicionar vendedor"}
-        </button>
-      </div>
+      )}
     </React.Fragment>
   );
 }
 
 /* ---------- lista de ações ---------- */
 
-export default function AcoesSection({ showToast }) {
+export default function AcoesSection({ canManage, showToast }) {
   const [acoes, setAcoes] = useState(null);
   const [openId, setOpenId] = useState(null);
   const [draft, setDraft] = useState({ name: "", price: "", size: "10", publicRanking: false, showSold: false });
@@ -303,7 +312,7 @@ export default function AcoesSection({ showToast }) {
   const load = () => api.get("/api/admin/acoes").then(setAcoes).catch((e) => showToast("Erro ao carregar: " + e.message, true));
   useEffect(() => { load(); }, []);
 
-  if (openId) return <AcaoDetail id={openId} onBack={() => { setOpenId(null); load(); }} showToast={showToast} />;
+  if (openId) return <AcaoDetail id={openId} canManage={canManage} onBack={() => { setOpenId(null); load(); }} showToast={showToast} />;
   if (!acoes) return <div className="a-loading">Carregando ações…</div>;
 
   const create = async () => {
@@ -346,7 +355,7 @@ export default function AcoesSection({ showToast }) {
         <div className="form-block acao-card" key={a.id}>
           <div className="vendedor-top">
             <h3>{a.name}</h3>
-            <button className="cat-del" onClick={() => del(a)}>Excluir</button>
+            {canManage && <button className="cat-del" onClick={() => del(a)}>Excluir</button>}
           </div>
           <div className="aviso-meta" style={{ marginTop: 0, marginBottom: 10 }}>
             Número a {fmt(a.number_price)} · blocos de {a.block_size} · {a.blocks} bloco{a.blocks === 1 ? "" : "s"} · {a.sold_numbers} número{a.sold_numbers === 1 ? "" : "s"} vendido{a.sold_numbers === 1 ? "" : "s"}
@@ -357,6 +366,7 @@ export default function AcoesSection({ showToast }) {
         </div>
       ))}
 
+      {canManage && (
       <div className="form-block">
         <h3>Nova ação entre amigos</h3>
         <div className="form-field">
@@ -392,6 +402,7 @@ export default function AcoesSection({ showToast }) {
           {saving ? "Criando…" : "+ Criar ação"}
         </button>
       </div>
+      )}
     </React.Fragment>
   );
 }
