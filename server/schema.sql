@@ -129,8 +129,12 @@ create table if not exists acoes (
   name text not null,
   number_price numeric(10, 2) not null check (number_price > 0),
   block_size int not null default 10 check (block_size > 0),
+  public_ranking boolean not null default false,
   created_at timestamptz not null default now()
 );
+
+-- Migração para bancos criados antes da coluna public_ranking.
+alter table acoes add column if not exists public_ranking boolean not null default false;
 
 create table if not exists acao_sellers (
   id uuid primary key default gen_random_uuid(),

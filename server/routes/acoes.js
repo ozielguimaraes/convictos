@@ -7,7 +7,7 @@ import { requireAdmin } from "../auth.js";
 
 export const acoesRouter = Router();
 
-const ACAO_FIELDS = "id, name, number_price, block_size, created_at";
+const ACAO_FIELDS = "id, name, number_price, block_size, public_ranking, created_at";
 const BLOCK_FIELDS = "id, seller_id, start_number, sold_count, received, returned";
 
 const numAcao = (row) => ({ ...row, number_price: Number(row.number_price) });
@@ -66,10 +66,11 @@ function acaoInput(body) {
   const name = String(body.name || "").trim();
   const number_price = Number(body.number_price);
   const block_size = Number(body.block_size);
+  const public_ranking = !!body.public_ranking;
   if (!name) return { error: "nome obrigatório" };
   if (!(number_price > 0)) return { error: "valor do número deve ser maior que zero" };
   if (!Number.isInteger(block_size) || block_size < 1) return { error: "quantidade de números por bloco inválida" };
-  return { name, number_price, block_size };
+  return { name, number_price, block_size, public_ranking };
 }
 
 acoesRouter.post("/admin/acoes", requireAdmin, async (req, res, next) => {
@@ -77,8 +78,8 @@ acoesRouter.post("/admin/acoes", requireAdmin, async (req, res, next) => {
     const input = acaoInput(req.body);
     if (input.error) return res.status(400).json({ error: input.error });
     const { rows } = await query(
-      `insert into acoes (name, number_price, block_size) values ($1, $2, $3) returning ${ACAO_FIELDS}`,
-      [input.name, input.number_price, input.block_size]
+      `insert into acoes (name, number_price, block_size, public_ranking) values ($1, $2, $3, $4) returning ${ACAO_FIELDS}`,
+      [input.name, input.number_price, input.block_size, input.public_ranking]
     );
     res.status(201).json(numAcao(rows[0]));
   } catch (e) {
@@ -91,8 +92,9 @@ acoesRouter.put("/admin/acoes/:id", requireAdmin, async (req, res, next) => {
     const input = acaoInput(req.body);
     if (input.error) return res.status(400).json({ error: input.error });
     const { rows } = await query(
-      `update acoes set name = $1, number_price = $2, block_size = $3 where id = $4 returning ${ACAO_FIELDS}`,
-      [input.name, input.number_price, input.block_size, req.params.id]
+      `update acoes set name = $1, number_price = $2, block_size = $3, public_ranking = $4
+       where id = $5 returning ${ACAO_FIELDS}`,
+      [input.name, input.number_price, input.block_size, input.public_ranking, req.params.id]
     );
     if (!rows.length) return res.status(404).json({ error: "ação não encontrada" });
     res.json(numAcao(rows[0]));
@@ -130,6 +132,51 @@ acoesRouter.get("/admin/acoes/:id", requireAdmin, async (req, res, next) => {
       ...acao,
       sellers: sellers.rows.map((s) => ({ ...s, blocks: bySeller.get(s.id) })),
     });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// ---------- ranking público (sem auth; só expõe vendas, nunca pagamentos) ----------
+
+acoesRouter.get("/acoes/public", async (req, res, next) => {
+  try {
+    const { rows } = await query(
+      "select id, name from acoes where public_ranking order by created_at desc"
+    );
+    res.json(rows);
+  } catch (e) {
+    next(e);
+  }
+});
+
+acoesRouter.get("/acoes/:id/ranking", async (req, res, next) => {
+  try {
+    if (!/^[0-9a-f-]{36}$/i.test(req.params.id)) return res.status(404).json({ error: "ranking não encontrado" });
+    const { rows } = await query(
+      `select ${ACAO_FIELDS} from acoes where id = $1 and public_ranking`,
+      [req.params.id]
+    );
+    if (!rows.length) return res.status(404).json({ error: "ranking não encontrado" });
+    const acao = numAcao(rows[0]);
+    const sellers = await query(
+      `select s.name, coalesce(sum(b.sold_count), 0)::int as sold_numbers
+       from acao_sellers s left join acao_blocks b on b.seller_id = s.id
+       where s.acao_id = $1
+       group by s.id order by sold_numbers desc, s.name`,
+      [acao.id]
+    );
+    // Empates dividem a posição (1, 2, 2, 4...).
+    let rank = 0;
+    let prevSold = null;
+    const ranking = sellers.rows.map((s, i) => {
+      if (s.sold_numbers !== prevSold) {
+        rank = i + 1;
+        prevSold = s.sold_numbers;
+      }
+      return { rank, name: s.name, sold_numbers: s.sold_numbers, sold_value: s.sold_numbers * acao.number_price };
+    });
+    res.json({ name: acao.name, number_price: acao.number_price, ranking });
   } catch (e) {
     next(e);
   }

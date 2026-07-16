@@ -14,6 +14,7 @@ export default defineConfig({
       input: {
         main: resolve(__dirname, "index.html"),
         avisos: resolve(__dirname, "avisos/index.html"),
+        rifa: resolve(__dirname, "rifa/index.html"),
         admin: resolve(__dirname, "admin/index.html"),
         cardapio: resolve(__dirname, "cardapio/index.html"),
         cardapioAdmin: resolve(__dirname, "cardapio/admin/index.html"),

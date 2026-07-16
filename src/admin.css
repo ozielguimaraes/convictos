@@ -216,3 +216,4 @@ input { font-family: inherit; }
 
 .acao-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .back-btn { color: var(--muted); font-weight: 700; font-size: 14px; padding: 0 0 12px; display: inline-block; }
+.ranking-link { color: var(--green-dark); font-weight: 700; font-size: 13px; align-self: center; }

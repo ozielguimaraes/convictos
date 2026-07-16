@@ -1,5 +1,15 @@
 # WORKLOG
 
+## 2026-07-15 — Ranking público da ação (/rifa/)
+
+- Flag `public_ranking` na ação (criação e edição via pill no admin, com link
+  para a página quando ativo).
+- Página pública `/rifa/?id=<acao>`: pódio dos top 3 + tabela dos demais
+  (empates dividem posição — 1, 2, 2, 4). Sem id, lista as ações públicas.
+- API pública só expõe nome e vendas (nunca recebido/pendente); ação privada
+  responde 404. Nova entrada `rifa` no Vite; estilos em public.css com o tema
+  do admin.
+
 ## 2026-07-15 — Ciclo de entrega dos blocos
 
 - Bloco agora tem estado `returned` (pegou → entregou). Enquanto está com o

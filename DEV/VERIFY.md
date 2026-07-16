@@ -1,5 +1,15 @@
 # VERIFY
 
+## 2026-07-15 — ranking público
+
+- API sem auth: /api/acoes/public lista só ações públicas; ranking com
+  empate correto (Maria 9 → 1º; Ana/João 7 → ambos 2º; Pedro → 4º);
+  ação privada → 404.
+- Navegador: /rifa/?id= mostra pódio (1º central mais alto, medalhas,
+  bordas ouro/prata/bronze) + tabela com 4º e 5º; tema do perfil aplicado.
+- Admin: pill "🏆 Ranking público" na criação e no detalhe (salva na hora),
+  link "Ver página do ranking" quando ativo.
+
 ## 2026-07-15 — ciclo de entrega dos blocos
 
 - API (bloco de 10 × R$ 10): recém-pego → pendente 100; entregue com 6

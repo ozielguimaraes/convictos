@@ -225,6 +225,21 @@ function AcaoDetail({ id, onBack, showToast }) {
   const received = allBlocks.reduce((t, b) => t + b.received, 0);
   const pending = allBlocks.reduce((t, b) => t + blockPending(acao, b.returned, b.sold_count, b.received), 0);
 
+  const toggleRanking = async () => {
+    try {
+      const saved = await api.put(`/api/admin/acoes/${acao.id}`, {
+        name: acao.name,
+        number_price: acao.number_price,
+        block_size: acao.block_size,
+        public_ranking: !acao.public_ranking,
+      });
+      setAcao((a) => ({ ...a, public_ranking: saved.public_ranking }));
+      showToast(saved.public_ranking ? "✓ Ranking público ativado!" : "✓ Ranking agora é privado.");
+    } catch (e) {
+      showToast("Erro: " + e.message, true);
+    }
+  };
+
   return (
     <React.Fragment>
       <button className="link-btn back-btn" onClick={onBack}>← Todas as ações</button>
@@ -235,6 +250,16 @@ function AcaoDetail({ id, onBack, showToast }) {
           Número a {fmt(acao.number_price)} · blocos de {acao.block_size} ({fmt(acao.number_price * acao.block_size)} por bloco)
         </div>
         <Totais sold={sold} received={received} pending={pending} />
+        <div className="aviso-actions" style={{ marginTop: 0 }}>
+          <button className={"pill-toggle" + (acao.public_ranking ? " on" : "")} onClick={toggleRanking}>
+            🏆 Ranking público
+          </button>
+          {acao.public_ranking && (
+            <a className="ranking-link" href={`/rifa/?id=${acao.id}`} target="_blank" rel="noreferrer">
+              Ver página do ranking ↗
+            </a>
+          )}
+        </div>
       </div>
 
       {acao.sellers.map((s) => (
@@ -261,7 +286,7 @@ function AcaoDetail({ id, onBack, showToast }) {
 export default function AcoesSection({ showToast }) {
   const [acoes, setAcoes] = useState(null);
   const [openId, setOpenId] = useState(null);
-  const [draft, setDraft] = useState({ name: "", price: "", size: "10" });
+  const [draft, setDraft] = useState({ name: "", price: "", size: "10", publicRanking: false });
   const [saving, setSaving] = useState(false);
 
   const load = () => api.get("/api/admin/acoes").then(setAcoes).catch((e) => showToast("Erro ao carregar: " + e.message, true));
@@ -275,8 +300,13 @@ export default function AcoesSection({ showToast }) {
     const size = parseInt(draft.size, 10);
     setSaving(true);
     try {
-      const created = await api.post("/api/admin/acoes", { name: draft.name.trim(), number_price: price, block_size: size });
-      setDraft({ name: "", price: "", size: "10" });
+      const created = await api.post("/api/admin/acoes", {
+        name: draft.name.trim(),
+        number_price: price,
+        block_size: size,
+        public_ranking: draft.publicRanking,
+      });
+      setDraft({ name: "", price: "", size: "10", publicRanking: false });
       setAcoes((list) => [{ ...created, blocks: 0, sold_numbers: 0, sold_value: 0, received: 0, pending: 0 }, ...list]);
       showToast("✓ Ação criada!");
     } catch (e) {
@@ -308,6 +338,7 @@ export default function AcoesSection({ showToast }) {
           </div>
           <div className="aviso-meta" style={{ marginTop: 0, marginBottom: 10 }}>
             Número a {fmt(a.number_price)} · blocos de {a.block_size} · {a.blocks} bloco{a.blocks === 1 ? "" : "s"} · {a.sold_numbers} número{a.sold_numbers === 1 ? "" : "s"} vendido{a.sold_numbers === 1 ? "" : "s"}
+            {a.public_ranking && " · 🏆 ranking público"}
           </div>
           <Totais sold={a.sold_value} received={a.received} pending={a.pending} />
           <button className="add-item-btn" onClick={() => setOpenId(a.id)}>Abrir vendedores e blocos →</button>
@@ -332,6 +363,12 @@ export default function AcoesSection({ showToast }) {
             <input type="text" inputMode="numeric" value={draft.size}
               onChange={(e) => setDraft({ ...draft, size: e.target.value })} />
           </div>
+        </div>
+        <div className="aviso-actions" style={{ marginTop: 0, marginBottom: 12 }}>
+          <button className={"pill-toggle" + (draft.publicRanking ? " on" : "")}
+            onClick={() => setDraft({ ...draft, publicRanking: !draft.publicRanking })}>
+            🏆 Ranking público
+          </button>
         </div>
         <button className="add-cat-btn" onClick={create} disabled={saving}>
           {saving ? "Criando…" : "+ Criar ação"}
