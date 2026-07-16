@@ -33,6 +33,25 @@ create table if not exists sessions (
   created_at timestamptz not null default now()
 );
 
+-- Perfis de acesso dinâmicos: cada perfil lista as permissões (keys do
+-- catálogo em server/permissions.js). O super admin ignora perfis (tem tudo);
+-- os demais usuários enxergam perfil ∪ extra_permissions.
+create table if not exists access_profiles (
+  id serial primary key,
+  name text not null unique,
+  permissions text[] not null default '{}',
+  created_at timestamptz not null default now()
+);
+
+alter table admin_users add column if not exists profile_id int references access_profiles(id) on delete set null;
+alter table admin_users add column if not exists extra_permissions text[] not null default '{}';
+
+-- Perfil Gestor: tudo, exceto gerenciar perfis. Semeado uma vez pelo nome —
+-- edições posteriores do super admin não são sobrescritas.
+insert into access_profiles (name, permissions)
+  values ('Gestor', '{links,aparencia,avisos,acoes,cardapio,usuarios}')
+  on conflict (name) do nothing;
+
 -- Tokens de login por e-mail: o mesmo registro serve o OTP de 6 dígitos
 -- e o link mágico (magic_token), enviados no mesmo e-mail.
 create table if not exists login_tokens (

@@ -169,13 +169,14 @@ function Editor({ onLogout }) {
 }
 
 export default function Admin() {
-  const [phase, setPhase] = useState("checking"); // checking | out | in
+  const [phase, setPhase] = useState("checking"); // checking | out | denied | in
 
-  useEffect(() => {
+  const check = () =>
     api.get("/api/auth/me")
-      .then(() => setPhase("in"))
+      .then((me) => setPhase(me.permissions.includes("cardapio") ? "in" : "denied"))
       .catch(() => setPhase("out"));
-  }, []);
+
+  useEffect(() => { check(); }, []);
 
   const logout = async () => {
     await api.post("/api/auth/logout");
@@ -183,6 +184,16 @@ export default function Admin() {
   };
 
   if (phase === "checking") return <div className="a-loading">Carregando…</div>;
-  if (phase === "out") return <Login onOk={() => setPhase("in")} backHref="/cardapio/" backLabel="← Voltar ao cardápio" />;
+  if (phase === "out") return <Login onOk={check} backHref="/cardapio/" backLabel="← Voltar ao cardápio" />;
+  if (phase === "denied") {
+    return (
+      <div className="gate">
+        <div className="lock">🔒</div>
+        <h1>Sem acesso ao cardápio</h1>
+        <p>Sua conta não tem a permissão "Cardápio". Fale com o administrador.</p>
+        <a className="back" href="/cardapio/">← Voltar ao cardápio</a>
+      </div>
+    );
+  }
   return <Editor onLogout={logout} />;
 }

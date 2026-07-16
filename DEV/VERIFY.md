@@ -1,5 +1,16 @@
 # VERIFY
 
+## 2026-07-16 — RBAC
+
+- Matriz via curl: gestora (perfil Gestor) lista/cria usuários (200/201),
+  cria/edita perfil → 403, extra "perfis" → 400, editar/excluir super admin
+  → 403/400, acessa ações/links → 200.
+- Usuário sem perfil: 403 em tudo; após extra "avisos" concedido pela
+  gestora → 200 em avisos, 403 no resto; /me lista só ["avisos"].
+- Navegador: super admin vê menu completo (+ Perfis de acesso); gestora via
+  link mágico vê tudo menos Perfis, e o chip "perfis" some na tela dela.
+- Gestor semeado com {links,aparencia,avisos,acoes,cardapio,usuarios}.
+
 ## 2026-07-15 — ranking público
 
 - API sem auth: /api/acoes/public lista só ações públicas; ranking com

@@ -8,6 +8,7 @@ import { authRouter } from "./auth.js";
 import { convictosRouter } from "./routes/convictos.js";
 import { cardapioRouter } from "./routes/cardapio.js";
 import { acoesRouter } from "./routes/acoes.js";
+import { accessProfilesRouter } from "./routes/accessProfiles.js";
 
 const app = express();
 app.use(express.json({ limit: "1mb" }));
@@ -17,6 +18,7 @@ app.get("/api/health", (req, res) => res.json({ ok: true }));
 app.use("/api/auth", authRouter);
 app.use("/api/cardapio", cardapioRouter);
 app.use("/api", acoesRouter);
+app.use("/api", accessProfilesRouter);
 app.use("/api", convictosRouter);
 
 // Em produção serve o build do Vite. O domínio cardapio.querc.app é reescrito

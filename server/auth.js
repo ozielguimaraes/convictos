@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import { query } from "./db.js";
 import { sendLoginEmail } from "./mail.js";
+import { PERMISSION_KEYS } from "./permissions.js";
 
 const SESSION_COOKIE = "convictos_session";
 const SESSION_DAYS = 30;
@@ -24,31 +25,50 @@ async function createSession(res, userId) {
   });
 }
 
-/* Middleware: exige sessão válida de admin; anexa req.admin. */
+/* Middleware: exige sessão válida de admin; anexa req.admin com as permissões
+   efetivas (super admin = todas; demais = perfil ∪ extras). */
 export async function requireAdmin(req, res, next) {
   try {
     const token = req.cookies[SESSION_COOKIE];
     if (!token) return res.status(401).json({ error: "não autenticado" });
     const { rows } = await query(
-      `select u.id, u.email, u.name, u.role from sessions s
+      `select u.id, u.email, u.name, u.role, u.profile_id, u.extra_permissions,
+              p.name as profile_name, coalesce(p.permissions, '{}') as profile_permissions
+       from sessions s
        join admin_users u on u.id = s.user_id
+       left join access_profiles p on p.id = u.profile_id
        where s.token = $1 and s.expires_at > now()`,
       [token]
     );
     if (!rows.length) return res.status(401).json({ error: "sessão expirada" });
-    req.admin = rows[0];
+    const u = rows[0];
+    const effective = u.role === "super_admin"
+      ? PERMISSION_KEYS
+      : [...new Set([...(u.profile_permissions || []), ...(u.extra_permissions || [])])]
+          .filter((k) => PERMISSION_KEYS.includes(k));
+    req.admin = {
+      id: u.id,
+      email: u.email,
+      name: u.name,
+      role: u.role,
+      profile_id: u.profile_id,
+      profile_name: u.profile_name,
+      permissions: effective,
+    };
     next();
   } catch (e) {
     next(e);
   }
 }
 
-/* Middleware: exige sessão de super admin (gestão de usuários). */
-export function requireSuperAdmin(req, res, next) {
-  requireAdmin(req, res, () => {
-    if (req.admin.role !== "super_admin") return res.status(403).json({ error: "acesso restrito" });
-    next();
-  });
+/* Middleware: exige ao menos uma das permissões informadas. */
+export function requirePermission(...keys) {
+  return (req, res, next) => {
+    requireAdmin(req, res, () => {
+      if (keys.some((k) => req.admin.permissions.includes(k))) return next();
+      res.status(403).json({ error: "acesso restrito" });
+    });
+  };
 }
 
 export const authRouter = Router();
@@ -151,5 +171,12 @@ authRouter.post("/logout", async (req, res, next) => {
 });
 
 authRouter.get("/me", requireAdmin, (req, res) => {
-  res.json({ id: req.admin.id, email: req.admin.email, name: req.admin.name, role: req.admin.role });
+  res.json({
+    id: req.admin.id,
+    email: req.admin.email,
+    name: req.admin.name,
+    role: req.admin.role,
+    profile: req.admin.profile_name || null,
+    permissions: req.admin.permissions,
+  });
 });

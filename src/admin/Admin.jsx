@@ -9,22 +9,25 @@ import AparenciaSection from "./sections/AparenciaSection.jsx";
 import AvisosSection from "./sections/AvisosSection.jsx";
 import AcoesSection from "./sections/AcoesSection.jsx";
 import UsuariosSection from "./sections/UsuariosSection.jsx";
+import PerfisSection from "./sections/PerfisSection.jsx";
 
+// Cada seção corresponde a uma permissão do catálogo do servidor; o menu só
+// mostra o que /api/auth/me liberar.
 const SECTIONS = [
   { key: "links", label: "Links", emoji: "🔗" },
   { key: "aparencia", label: "Aparência", emoji: "🎨" },
   { key: "avisos", label: "Avisos", emoji: "📢" },
   { key: "acoes", label: "Ações entre amigos", emoji: "🎟️" },
+  { key: "usuarios", label: "Usuários", emoji: "👥" },
+  { key: "perfis", label: "Perfis de acesso", emoji: "🛡️" },
 ];
 
 function Panel({ me, onLogout }) {
-  const [section, setSection] = useState("links");
+  const sections = SECTIONS.filter((s) => me.permissions.includes(s.key));
+  const [section, setSection] = useState(sections[0]?.key || "");
   const [menuOpen, setMenuOpen] = useState(false);
   const [toast, showToast] = useToast();
 
-  const sections = me.role === "super_admin"
-    ? [...SECTIONS, { key: "usuarios", label: "Usuários", emoji: "👥" }]
-    : SECTIONS;
   const current = sections.find((s) => s.key === section);
 
   const pick = (key) => {
@@ -44,9 +47,11 @@ function Panel({ me, onLogout }) {
               <span className="nav-emoji">{s.emoji}</span>{s.label}
             </button>
           ))}
-          <a className="nav-item" href="/cardapio/admin/">
-            <span className="nav-emoji">🍔</span>Cardápio<span className="nav-ext">↗</span>
-          </a>
+          {me.permissions.includes("cardapio") && (
+            <a className="nav-item" href="/cardapio/admin/">
+              <span className="nav-emoji">🍔</span>Cardápio<span className="nav-ext">↗</span>
+            </a>
+          )}
         </nav>
         <div className="sb-foot">
           <div className="sb-user" title={me.email}>{me.name || me.email}</div>
@@ -60,11 +65,15 @@ function Panel({ me, onLogout }) {
           <span className="topbar-title">{current?.label}</span>
         </header>
         <div className="a-body">
+          {sections.length === 0 && (
+            <div className="a-loading">Sua conta ainda não tem acesso a nenhuma seção.<br />Fale com o administrador.</div>
+          )}
           {section === "links" && <LinksSection showToast={showToast} />}
           {section === "aparencia" && <AparenciaSection showToast={showToast} />}
           {section === "avisos" && <AvisosSection showToast={showToast} />}
           {section === "acoes" && <AcoesSection showToast={showToast} />}
-          {section === "usuarios" && me.role === "super_admin" && <UsuariosSection me={me} showToast={showToast} />}
+          {section === "usuarios" && <UsuariosSection me={me} showToast={showToast} />}
+          {section === "perfis" && <PerfisSection showToast={showToast} />}
         </div>
       </div>
 

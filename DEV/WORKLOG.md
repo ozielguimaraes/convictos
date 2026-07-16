@@ -1,5 +1,19 @@
 # WORKLOG
 
+## 2026-07-16 — Níveis de acesso dinâmicos (RBAC)
+
+- Catálogo de permissões em server/permissions.js (links, aparencia, avisos,
+  acoes, cardapio, usuarios, perfis). Tabela `access_profiles` (nome distinto
+  da `profile` do linktree) + `profile_id`/`extra_permissions` em admin_users.
+- Permissões efetivas = perfil ∪ extras; super admin tem tudo (fixo).
+  requirePermission(...keys) guarda cada grupo de rotas; /me devolve as
+  permissões e o front monta o menu a partir disso (cardápio admin idem).
+- Perfil **Gestor** semeado: tudo exceto `perfis`. Regras: ninguém cria super
+  admin (role nunca vem do payload); só o super admin altera a própria conta;
+  quem não é super admin não concede `perfis` (nem extra, nem via perfil).
+- Telas: "Perfis de acesso" (chips por permissão, contagem de usuários) e
+  Usuários reformulada (select de perfil + acessos extras por usuário).
+
 ## 2026-07-15 — Ranking público: só posição por padrão
 
 - Por padrão o /rifa/ mostra apenas posição e nome (pódio e tabela).

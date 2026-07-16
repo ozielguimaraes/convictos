@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { query, withTransaction } from "../db.js";
-import { requireAdmin } from "../auth.js";
+import { requirePermission } from "../auth.js";
 
 export const cardapioRouter = Router();
 
@@ -35,7 +35,7 @@ cardapioRouter.get("/menu", async (req, res, next) => {
 // Grava o cardápio inteiro de forma atômica, ATUALIZANDO PELO ID (não apaga e
 // recria) — porte da função replace_menu do cardapio-on. Itens que já existem
 // mantêm o id, então mudar preço durante o evento não esvazia carrinhos abertos.
-cardapioRouter.put("/menu", requireAdmin, async (req, res, next) => {
+cardapioRouter.put("/menu", requirePermission("cardapio"), async (req, res, next) => {
   try {
     const categorias = req.body?.categorias;
     if (!Array.isArray(categorias)) return res.status(400).json({ error: "esperado { categorias: [...] }" });
