@@ -1,5 +1,13 @@
 # WORKLOG
 
+## 2026-07-15 — Ciclo de entrega dos blocos
+
+- Bloco agora tem estado `returned` (pegou → entregou). Enquanto está com o
+  vendedor, o pendente é o bloco inteiro − recebido; após a entrega vale o
+  vendido − recebido (status derivado: pago / pagamento parcial / não pago).
+- Bloco recém-adicionado nasce "com o vendedor" (pendente cheio), regra do
+  maestro. Agregados da listagem calculam o pendente por bloco no SQL.
+
 ## 2026-07-15 — Sidebar no admin + ações entre amigos
 
 - **Layout:** /admin/ migrado de abas horizontais para navegação lateral

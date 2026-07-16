@@ -8,7 +8,7 @@ import { requireAdmin } from "../auth.js";
 export const acoesRouter = Router();
 
 const ACAO_FIELDS = "id, name, number_price, block_size, created_at";
-const BLOCK_FIELDS = "id, seller_id, start_number, sold_count, received";
+const BLOCK_FIELDS = "id, seller_id, start_number, sold_count, received, returned";
 
 const numAcao = (row) => ({ ...row, number_price: Number(row.number_price) });
 const numBlock = (row) => ({ ...row, received: Number(row.received) });
@@ -34,19 +34,28 @@ async function findOverlap(acaoId, start, blockSize, ignoreBlockId) {
 
 acoesRouter.get("/admin/acoes", requireAdmin, async (req, res, next) => {
   try {
+    // Pendente por bloco: sem entrega o vendedor deve o bloco inteiro; após a
+    // entrega, deve o que vendeu — sempre descontando o recebido (mín. zero).
     const { rows } = await query(
       `select a.${ACAO_FIELDS.split(", ").join(", a.")},
               count(b.id)::int as blocks,
               coalesce(sum(b.sold_count), 0)::int as sold_numbers,
-              coalesce(sum(b.received), 0) as received
+              coalesce(sum(b.received), 0) as received,
+              coalesce(sum(greatest(
+                (case when b.returned then b.sold_count else a.block_size end) * a.number_price - b.received,
+                0
+              )), 0) as pending
        from acoes a left join acao_blocks b on b.acao_id = a.id
        group by a.id order by a.created_at desc`
     );
     res.json(rows.map((r) => {
       const acao = numAcao(r);
-      const sold_value = acao.sold_numbers * acao.number_price;
-      const received = Number(r.received);
-      return { ...acao, received, sold_value, pending: sold_value - received };
+      return {
+        ...acao,
+        received: Number(r.received),
+        sold_value: acao.sold_numbers * acao.number_price,
+        pending: Number(r.pending),
+      };
     }));
   } catch (e) {
     next(e);
@@ -175,12 +184,13 @@ function blockInput(body, blockSize) {
   const start_number = Number(body.start_number);
   const sold_count = Number(body.sold_count ?? 0);
   const received = Number(body.received ?? 0);
+  const returned = !!body.returned;
   if (!Number.isInteger(start_number) || start_number < 1) return { error: "número inicial inválido" };
   if (!Number.isInteger(sold_count) || sold_count < 0 || sold_count > blockSize) {
     return { error: `números vendidos deve ficar entre 0 e ${blockSize}` };
   }
   if (!(received >= 0)) return { error: "valor recebido inválido" };
-  return { start_number, sold_count, received };
+  return { start_number, sold_count, received, returned };
 }
 
 acoesRouter.post("/admin/sellers/:id/blocks", requireAdmin, async (req, res, next) => {
@@ -221,9 +231,9 @@ acoesRouter.put("/admin/blocks/:id", requireAdmin, async (req, res, next) => {
       });
     }
     const { rows } = await query(
-      `update acao_blocks set start_number = $1, sold_count = $2, received = $3
-       where id = $4 returning ${BLOCK_FIELDS}`,
-      [input.start_number, input.sold_count, input.received, req.params.id]
+      `update acao_blocks set start_number = $1, sold_count = $2, received = $3, returned = $4
+       where id = $5 returning ${BLOCK_FIELDS}`,
+      [input.start_number, input.sold_count, input.received, input.returned, req.params.id]
     );
     res.json(numBlock(rows[0]));
   } catch (e) {

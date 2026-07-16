@@ -1,13 +1,19 @@
 /* Ações entre amigos: cadastro de ações, vendedores e blocos de números.
-   Vendido = números vendidos × valor do número; pendente = vendido − recebido. */
+   Ciclo do bloco: o vendedor pega (deve o bloco inteiro) → entrega e o acerto
+   passa a ser sobre o vendido (pago, parcial ou não pago). Pendente é sempre
+   calculado: (entregue ? vendidos : bloco inteiro) × valor − recebido. */
 import React, { useState, useEffect } from "react";
 import { api } from "../../lib/api.js";
 import { fmt, strToPrice } from "../../lib/format.js";
 
 const blockLabel = (b, size) => `${b.start_number}–${b.start_number + size - 1}`;
 
-function Totais({ sold, received }) {
-  const pending = sold - received;
+function blockPending(acao, returned, soldCount, received) {
+  const owed = (returned ? soldCount : acao.block_size) * acao.number_price;
+  return Math.max(0, owed - received);
+}
+
+function Totais({ sold, received, pending }) {
   return (
     <div className="stat-row">
       <div className="stat"><span className="stat-label">Vendido</span><b>{fmt(sold)}</b></div>
@@ -25,13 +31,22 @@ function Totais({ sold, received }) {
 function BlocoRow({ acao, block, onSaved, onDeleted, showToast }) {
   const [sold, setSold] = useState(String(block.sold_count));
   const [received, setReceived] = useState(block.received ? String(block.received).replace(".", ",") : "");
+  const [returned, setReturned] = useState(block.returned);
   const [saving, setSaving] = useState(false);
 
   const soldN = Math.min(Math.max(parseInt(sold, 10) || 0, 0), acao.block_size);
   const receivedN = strToPrice(received);
-  const dirty = soldN !== block.sold_count || Math.abs(receivedN - block.received) > 0.004;
+  const dirty = soldN !== block.sold_count || returned !== block.returned || Math.abs(receivedN - block.received) > 0.004;
   const soldValue = soldN * acao.number_price;
-  const pending = soldValue - receivedN;
+  const pending = blockPending(acao, returned, soldN, receivedN);
+
+  const payStatus = !returned
+    ? null
+    : receivedN <= 0.004
+      ? "não pago"
+      : pending > 0.004
+        ? "pagamento parcial"
+        : "pago ✓";
 
   const save = async () => {
     setSaving(true);
@@ -40,6 +55,7 @@ function BlocoRow({ acao, block, onSaved, onDeleted, showToast }) {
         start_number: block.start_number,
         sold_count: soldN,
         received: receivedN,
+        returned,
       });
       onSaved(saved);
       showToast("✓ Bloco salvo!");
@@ -64,6 +80,9 @@ function BlocoRow({ acao, block, onSaved, onDeleted, showToast }) {
     <div className="bloco-row">
       <div className="bloco-nums">
         <b>{blockLabel(block, acao.block_size)}</b>
+        <button className={"pill-toggle" + (returned ? " on" : "")} onClick={() => setReturned(!returned)}>
+          {returned ? "✓ Entregue" : "📦 Com o vendedor"}
+        </button>
         <button className="icon-btn danger" onClick={del} aria-label="Excluir bloco">🗑</button>
       </div>
       <div className="bloco-fields">
@@ -81,8 +100,11 @@ function BlocoRow({ acao, block, onSaved, onDeleted, showToast }) {
       </div>
       <div className="bloco-calc">
         <span>Vendido: <b>{fmt(soldValue)}</b></span>
+        {payStatus && <span className={payStatus === "pago ✓" ? "ok" : "pend"}>{payStatus}</span>}
         <span className={pending > 0.004 ? "pend" : "ok"}>
-          {pending > 0.004 ? <>Pendente: <b>{fmt(pending)}</b></> : "✓ acertado"}
+          {pending > 0.004
+            ? <>Pendente: <b>{fmt(pending)}</b>{!returned && " (bloco com o vendedor)"}</>
+            : "✓ acertado"}
         </span>
         <button className="btn-small-save" onClick={save} disabled={!dirty || saving}>
           {saving ? "Salvando…" : dirty ? "Salvar" : "Salvo ✓"}
@@ -99,6 +121,7 @@ function VendedorCard({ acao, seller, onChanged, showToast }) {
 
   const soldValue = seller.blocks.reduce((s, b) => s + b.sold_count * acao.number_price, 0);
   const received = seller.blocks.reduce((s, b) => s + b.received, 0);
+  const pending = seller.blocks.reduce((s, b) => s + blockPending(acao, b.returned, b.sold_count, b.received), 0);
 
   // Sugere o próximo início livre: maior início da ação + tamanho do bloco.
   const addBlock = async () => {
@@ -155,7 +178,7 @@ function VendedorCard({ acao, seller, onChanged, showToast }) {
         <h3 onClick={rename} title="Toque para renomear">{seller.name}</h3>
         <button className="cat-del" onClick={del}>Excluir</button>
       </div>
-      <Totais sold={soldValue} received={received} />
+      <Totais sold={soldValue} received={received} pending={pending} />
       {seller.blocks.length === 0 && <div className="vendedor-empty">Nenhum bloco ainda.</div>}
       {seller.blocks.map((b) => (
         <BlocoRow key={b.id} acao={acao} block={b} onSaved={onBlockSaved} onDeleted={onBlockDeleted} showToast={showToast} />
@@ -197,8 +220,10 @@ function AcaoDetail({ id, onBack, showToast }) {
     }
   };
 
-  const sold = acao.sellers.reduce((t, s) => t + s.blocks.reduce((x, b) => x + b.sold_count * acao.number_price, 0), 0);
-  const received = acao.sellers.reduce((t, s) => t + s.blocks.reduce((x, b) => x + b.received, 0), 0);
+  const allBlocks = acao.sellers.flatMap((s) => s.blocks);
+  const sold = allBlocks.reduce((t, b) => t + b.sold_count * acao.number_price, 0);
+  const received = allBlocks.reduce((t, b) => t + b.received, 0);
+  const pending = allBlocks.reduce((t, b) => t + blockPending(acao, b.returned, b.sold_count, b.received), 0);
 
   return (
     <React.Fragment>
@@ -209,7 +234,7 @@ function AcaoDetail({ id, onBack, showToast }) {
         <div className="aviso-meta" style={{ marginTop: 0, marginBottom: 10 }}>
           Número a {fmt(acao.number_price)} · blocos de {acao.block_size} ({fmt(acao.number_price * acao.block_size)} por bloco)
         </div>
-        <Totais sold={sold} received={received} />
+        <Totais sold={sold} received={received} pending={pending} />
       </div>
 
       {acao.sellers.map((s) => (
@@ -284,7 +309,7 @@ export default function AcoesSection({ showToast }) {
           <div className="aviso-meta" style={{ marginTop: 0, marginBottom: 10 }}>
             Número a {fmt(a.number_price)} · blocos de {a.block_size} · {a.blocks} bloco{a.blocks === 1 ? "" : "s"} · {a.sold_numbers} número{a.sold_numbers === 1 ? "" : "s"} vendido{a.sold_numbers === 1 ? "" : "s"}
           </div>
-          <Totais sold={a.sold_value} received={a.received} />
+          <Totais sold={a.sold_value} received={a.received} pending={a.pending} />
           <button className="add-item-btn" onClick={() => setOpenId(a.id)}>Abrir vendedores e blocos →</button>
         </div>
       ))}

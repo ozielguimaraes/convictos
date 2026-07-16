@@ -139,9 +139,10 @@ create table if not exists acao_sellers (
   created_at timestamptz not null default now()
 );
 
--- Bloco de números de um vendedor. sold_count = números vendidos do bloco;
--- received = valor já acertado. Valor vendido e pendente são calculados
--- (sold_count × acoes.number_price − received).
+-- Bloco de números de um vendedor. Enquanto não entregue (returned = false) o
+-- vendedor responde pelo bloco inteiro: pendente = block_size × number_price −
+-- received. Depois da entrega, vale o vendido: sold_count × number_price −
+-- received (pago, parcial ou não pago).
 create table if not exists acao_blocks (
   id uuid primary key default gen_random_uuid(),
   acao_id uuid not null references acoes(id) on delete cascade,
@@ -149,9 +150,13 @@ create table if not exists acao_blocks (
   start_number int not null check (start_number > 0),
   sold_count int not null default 0 check (sold_count >= 0),
   received numeric(10, 2) not null default 0 check (received >= 0),
+  returned boolean not null default false,
   created_at timestamptz not null default now(),
   unique (acao_id, start_number)
 );
+
+-- Migração para bancos criados antes da coluna returned.
+alter table acao_blocks add column if not exists returned boolean not null default false;
 
 -- Marca migrações de dados já aplicadas: o schema roda a cada subida do
 -- container, e sem o marcador um insert "if not exists" ressuscitaria dados

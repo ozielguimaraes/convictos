@@ -1,5 +1,13 @@
 # VERIFY
 
+## 2026-07-15 — ciclo de entrega dos blocos
+
+- API (bloco de 10 × R$ 10): recém-pego → pendente 100; entregue com 6
+  vendidos sem pagar → 60; parcial R$ 40 → 20; pago R$ 60 → 0.
+- Navegador: pill "📦 Com o vendedor"/"✓ Entregue" por bloco; status
+  "pagamento parcial" e "não pago" derivados; totais do vendedor e da ação
+  somando pendente por bloco (100 + 30 = 130 no cenário de demonstração).
+
 ## 2026-07-15 — ações entre amigos + sidebar
 
 - API via curl: criar ação (R$ 10 × 10), vendedor, bloco 1–10; bloco
