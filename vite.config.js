@@ -3,7 +3,19 @@ import react from "@vitejs/plugin-react";
 import { resolve } from "path";
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    {
+      // Mesmo rewrite do server/index.js: /rifa/<id> abre a página do ranking.
+      name: "rifa-rest-path",
+      configureServer(server) {
+        server.middlewares.use((req, res, next) => {
+          if (/^\/rifa\/[0-9a-f-]{36}\/?$/i.test(req.url.split("?")[0])) req.url = "/rifa/";
+          next();
+        });
+      },
+    },
+  ],
   server: {
     proxy: {
       "/api": "http://localhost:3001",

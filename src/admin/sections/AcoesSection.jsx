@@ -273,7 +273,7 @@ function AcaoDetail({ id, canManage, onBack, showToast }) {
             </button>
           )}
           {acao.public_ranking && (
-            <a className="ranking-link" href={`/rifa/?id=${acao.id}`} target="_blank" rel="noreferrer">
+            <a className="ranking-link" href={`/rifa/${acao.id}`} target="_blank" rel="noreferrer">
               Ver página do ranking ↗
             </a>
           )}

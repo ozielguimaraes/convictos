@@ -90,7 +90,7 @@ function PublicList() {
   return (
     <div className="links">
       {state.acoes.map((a) => (
-        <a key={a.id} className="link-btn-card" href={`/rifa/?id=${a.id}`}>
+        <a key={a.id} className="link-btn-card" href={`/rifa/${a.id}`}>
           <span className="link-emoji">🏆</span>
           <span className="link-label">{a.name}</span>
         </a>
@@ -100,7 +100,10 @@ function PublicList() {
 }
 
 export default function App() {
-  const id = new URLSearchParams(location.search).get("id");
+  // URL RESTful: /rifa/<id>. O formato antigo (?id=) segue aceito para
+  // não quebrar links já compartilhados.
+  const id = location.pathname.match(/^\/rifa\/([0-9a-f-]{36})/i)?.[1]
+    || new URLSearchParams(location.search).get("id");
 
   useEffect(() => {
     api.get("/api/profile").then((p) => applyTheme(p.theme)).catch(() => {});

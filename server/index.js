@@ -31,6 +31,10 @@ if (existsSync(dist)) {
     if (host.startsWith("cardapio.") && !req.path.startsWith("/cardapio") && !req.path.startsWith("/api") && !req.path.startsWith("/assets")) {
       req.url = "/cardapio" + (req.url === "/" ? "/" : req.url);
     }
+    // URL RESTful do ranking: /rifa/<id> serve a página (o front lê o id do path).
+    if (/^\/rifa\/[0-9a-f-]{36}\/?$/i.test(req.path)) {
+      req.url = "/rifa/";
+    }
     next();
   });
   app.use(express.static(dist));

@@ -1,5 +1,13 @@
 # WORKLOG
 
+## 2026-07-16 — URL RESTful do ranking (/rifa/<id>)
+
+- Regra do maestro (agora global em ~/.orquestrador/rules.md): sempre padrão
+  RESTful — recurso no caminho, nunca query string.
+- /rifa/<id> vira a URL canônica (rewrite no Express e no dev server do Vite;
+  o front lê o id do pathname). O formato antigo ?id= segue aceito para não
+  quebrar links já compartilhados. Links do admin e da lista pública atualizados.
+
 ## 2026-07-16 — Permissões granulares (Ver/Editar por área)
 
 - Cada área do catálogo virou "<area>:view" e "<area>:manage" (manage implica
