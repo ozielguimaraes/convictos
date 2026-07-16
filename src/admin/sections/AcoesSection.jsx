@@ -225,16 +225,18 @@ function AcaoDetail({ id, onBack, showToast }) {
   const received = allBlocks.reduce((t, b) => t + b.received, 0);
   const pending = allBlocks.reduce((t, b) => t + blockPending(acao, b.returned, b.sold_count, b.received), 0);
 
-  const toggleRanking = async () => {
+  const saveFlags = async (patch, msg) => {
     try {
       const saved = await api.put(`/api/admin/acoes/${acao.id}`, {
         name: acao.name,
         number_price: acao.number_price,
         block_size: acao.block_size,
-        public_ranking: !acao.public_ranking,
+        public_ranking: acao.public_ranking,
+        show_sold_numbers: acao.show_sold_numbers,
+        ...patch,
       });
-      setAcao((a) => ({ ...a, public_ranking: saved.public_ranking }));
-      showToast(saved.public_ranking ? "✓ Ranking público ativado!" : "✓ Ranking agora é privado.");
+      setAcao((a) => ({ ...a, public_ranking: saved.public_ranking, show_sold_numbers: saved.show_sold_numbers }));
+      showToast(msg);
     } catch (e) {
       showToast("Erro: " + e.message, true);
     }
@@ -251,9 +253,18 @@ function AcaoDetail({ id, onBack, showToast }) {
         </div>
         <Totais sold={sold} received={received} pending={pending} />
         <div className="aviso-actions" style={{ marginTop: 0 }}>
-          <button className={"pill-toggle" + (acao.public_ranking ? " on" : "")} onClick={toggleRanking}>
+          <button className={"pill-toggle" + (acao.public_ranking ? " on" : "")}
+            onClick={() => saveFlags({ public_ranking: !acao.public_ranking },
+              acao.public_ranking ? "✓ Ranking agora é privado." : "✓ Ranking público ativado!")}>
             🏆 Ranking público
           </button>
+          {acao.public_ranking && (
+            <button className={"pill-toggle" + (acao.show_sold_numbers ? " on" : "")}
+              onClick={() => saveFlags({ show_sold_numbers: !acao.show_sold_numbers },
+                acao.show_sold_numbers ? "✓ Ranking mostra só a posição." : "✓ Ranking mostra números vendidos.")}>
+              🔢 Mostrar números vendidos
+            </button>
+          )}
           {acao.public_ranking && (
             <a className="ranking-link" href={`/rifa/?id=${acao.id}`} target="_blank" rel="noreferrer">
               Ver página do ranking ↗
@@ -286,7 +297,7 @@ function AcaoDetail({ id, onBack, showToast }) {
 export default function AcoesSection({ showToast }) {
   const [acoes, setAcoes] = useState(null);
   const [openId, setOpenId] = useState(null);
-  const [draft, setDraft] = useState({ name: "", price: "", size: "10", publicRanking: false });
+  const [draft, setDraft] = useState({ name: "", price: "", size: "10", publicRanking: false, showSold: false });
   const [saving, setSaving] = useState(false);
 
   const load = () => api.get("/api/admin/acoes").then(setAcoes).catch((e) => showToast("Erro ao carregar: " + e.message, true));
@@ -305,8 +316,9 @@ export default function AcoesSection({ showToast }) {
         number_price: price,
         block_size: size,
         public_ranking: draft.publicRanking,
+        show_sold_numbers: draft.publicRanking && draft.showSold,
       });
-      setDraft({ name: "", price: "", size: "10", publicRanking: false });
+      setDraft({ name: "", price: "", size: "10", publicRanking: false, showSold: false });
       setAcoes((list) => [{ ...created, blocks: 0, sold_numbers: 0, sold_value: 0, received: 0, pending: 0 }, ...list]);
       showToast("✓ Ação criada!");
     } catch (e) {
@@ -369,6 +381,12 @@ export default function AcoesSection({ showToast }) {
             onClick={() => setDraft({ ...draft, publicRanking: !draft.publicRanking })}>
             🏆 Ranking público
           </button>
+          {draft.publicRanking && (
+            <button className={"pill-toggle" + (draft.showSold ? " on" : "")}
+              onClick={() => setDraft({ ...draft, showSold: !draft.showSold })}>
+              🔢 Mostrar números vendidos
+            </button>
+          )}
         </div>
         <button className="add-cat-btn" onClick={create} disabled={saving}>
           {saving ? "Criando…" : "+ Criar ação"}

@@ -7,7 +7,7 @@ import { requireAdmin } from "../auth.js";
 
 export const acoesRouter = Router();
 
-const ACAO_FIELDS = "id, name, number_price, block_size, public_ranking, created_at";
+const ACAO_FIELDS = "id, name, number_price, block_size, public_ranking, show_sold_numbers, created_at";
 const BLOCK_FIELDS = "id, seller_id, start_number, sold_count, received, returned";
 
 const numAcao = (row) => ({ ...row, number_price: Number(row.number_price) });
@@ -67,10 +67,11 @@ function acaoInput(body) {
   const number_price = Number(body.number_price);
   const block_size = Number(body.block_size);
   const public_ranking = !!body.public_ranking;
+  const show_sold_numbers = !!body.show_sold_numbers;
   if (!name) return { error: "nome obrigatório" };
   if (!(number_price > 0)) return { error: "valor do número deve ser maior que zero" };
   if (!Number.isInteger(block_size) || block_size < 1) return { error: "quantidade de números por bloco inválida" };
-  return { name, number_price, block_size, public_ranking };
+  return { name, number_price, block_size, public_ranking, show_sold_numbers };
 }
 
 acoesRouter.post("/admin/acoes", requireAdmin, async (req, res, next) => {
@@ -78,8 +79,9 @@ acoesRouter.post("/admin/acoes", requireAdmin, async (req, res, next) => {
     const input = acaoInput(req.body);
     if (input.error) return res.status(400).json({ error: input.error });
     const { rows } = await query(
-      `insert into acoes (name, number_price, block_size, public_ranking) values ($1, $2, $3, $4) returning ${ACAO_FIELDS}`,
-      [input.name, input.number_price, input.block_size, input.public_ranking]
+      `insert into acoes (name, number_price, block_size, public_ranking, show_sold_numbers)
+       values ($1, $2, $3, $4, $5) returning ${ACAO_FIELDS}`,
+      [input.name, input.number_price, input.block_size, input.public_ranking, input.show_sold_numbers]
     );
     res.status(201).json(numAcao(rows[0]));
   } catch (e) {
@@ -92,9 +94,9 @@ acoesRouter.put("/admin/acoes/:id", requireAdmin, async (req, res, next) => {
     const input = acaoInput(req.body);
     if (input.error) return res.status(400).json({ error: input.error });
     const { rows } = await query(
-      `update acoes set name = $1, number_price = $2, block_size = $3, public_ranking = $4
-       where id = $5 returning ${ACAO_FIELDS}`,
-      [input.name, input.number_price, input.block_size, input.public_ranking, req.params.id]
+      `update acoes set name = $1, number_price = $2, block_size = $3, public_ranking = $4, show_sold_numbers = $5
+       where id = $6 returning ${ACAO_FIELDS}`,
+      [input.name, input.number_price, input.block_size, input.public_ranking, input.show_sold_numbers, req.params.id]
     );
     if (!rows.length) return res.status(404).json({ error: "ação não encontrada" });
     res.json(numAcao(rows[0]));
@@ -166,7 +168,9 @@ acoesRouter.get("/acoes/:id/ranking", async (req, res, next) => {
        group by s.id order by sold_numbers desc, s.name`,
       [acao.id]
     );
-    // Empates dividem a posição (1, 2, 2, 4...).
+    // Empates dividem a posição (1, 2, 2, 4...). Por padrão só a posição é
+    // pública; a quantidade vendida sai apenas com show_sold_numbers — valores
+    // em R$ nunca.
     let rank = 0;
     let prevSold = null;
     const ranking = sellers.rows.map((s, i) => {
@@ -174,9 +178,11 @@ acoesRouter.get("/acoes/:id/ranking", async (req, res, next) => {
         rank = i + 1;
         prevSold = s.sold_numbers;
       }
-      return { rank, name: s.name, sold_numbers: s.sold_numbers, sold_value: s.sold_numbers * acao.number_price };
+      const entry = { rank, name: s.name };
+      if (acao.show_sold_numbers) entry.sold_numbers = s.sold_numbers;
+      return entry;
     });
-    res.json({ name: acao.name, number_price: acao.number_price, ranking });
+    res.json({ name: acao.name, show_sold_numbers: acao.show_sold_numbers, ranking });
   } catch (e) {
     next(e);
   }

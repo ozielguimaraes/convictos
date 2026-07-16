@@ -130,11 +130,15 @@ create table if not exists acoes (
   number_price numeric(10, 2) not null check (number_price > 0),
   block_size int not null default 10 check (block_size > 0),
   public_ranking boolean not null default false,
+  -- No ranking público, por padrão só aparece a posição; a quantidade de
+  -- números vendidos é opcional e valores em R$ nunca são expostos.
+  show_sold_numbers boolean not null default false,
   created_at timestamptz not null default now()
 );
 
--- Migração para bancos criados antes da coluna public_ranking.
+-- Migração para bancos criados antes das colunas do ranking.
 alter table acoes add column if not exists public_ranking boolean not null default false;
+alter table acoes add column if not exists show_sold_numbers boolean not null default false;
 
 create table if not exists acao_sellers (
   id uuid primary key default gen_random_uuid(),

@@ -1,5 +1,12 @@
 # WORKLOG
 
+## 2026-07-15 — Ranking público: só posição por padrão
+
+- Por padrão o /rifa/ mostra apenas posição e nome (pódio e tabela).
+- Nova flag `show_sold_numbers` por ação (pill "🔢 Mostrar números vendidos"
+  no admin, visível quando o ranking é público) libera a quantidade vendida.
+- Valores em R$ removidos da página e da API pública em qualquer modo.
+
 ## 2026-07-15 — Ranking público da ação (/rifa/)
 
 - Flag `public_ranking` na ação (criação e edição via pill no admin, com link

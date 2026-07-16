@@ -1,14 +1,14 @@
 /* ===== CONVICTOS — ranking público da ação entre amigos =====
-   /rifa/?id=<acao> mostra pódio (top 3) + tabela dos demais.
-   Sem id, lista as ações com ranking público. */
+   /rifa/?id=<acao> mostra pódio (top 3) + tabela dos demais. Por padrão só a
+   posição; quantidade vendida aparece se a ação habilitar (valores em R$
+   nunca são públicos). Sem id, lista as ações com ranking público. */
 import React, { useState, useEffect } from "react";
 import { api } from "../lib/api.js";
 import { applyTheme } from "../lib/theme.js";
-import { fmt } from "../lib/format.js";
 
 const MEDALS = ["🥇", "🥈", "🥉"];
 
-function Podium({ top }) {
+function Podium({ top, showSold }) {
   // Ordem visual clássica: 2º à esquerda, 1º ao centro, 3º à direita.
   const slots = [top[1], top[0], top[2]].filter(Boolean);
   return (
@@ -17,8 +17,7 @@ function Podium({ top }) {
         <div key={s.name + s.rank} className={`podium-col podium-${s.rank <= 3 ? s.rank : 3}`}>
           <div className="podium-medal">{MEDALS[s.rank - 1] || "🏅"}</div>
           <div className="podium-name">{s.name}</div>
-          <div className="podium-sold">{s.sold_numbers} número{s.sold_numbers === 1 ? "" : "s"}</div>
-          <div className="podium-sold">{fmt(s.sold_value)}</div>
+          {showSold && <div className="podium-sold">{s.sold_numbers} número{s.sold_numbers === 1 ? "" : "s"}</div>}
           <div className="podium-base">{s.rank}º</div>
         </div>
       ))}
@@ -41,6 +40,7 @@ function Ranking({ id }) {
   }
 
   const { data } = state;
+  const showSold = !!data.show_sold_numbers;
   const top = data.ranking.slice(0, 3);
   const rest = data.ranking.slice(3);
 
@@ -50,19 +50,18 @@ function Ranking({ id }) {
       {data.ranking.length === 0 && (
         <div className="state-msg"><span className="e-emoji">🎟️</span>Ainda não há vendedores nesta ação.</div>
       )}
-      {top.length > 0 && <Podium top={top} />}
+      {top.length > 0 && <Podium top={top} showSold={showSold} />}
       {rest.length > 0 && (
         <table className="rank-table">
           <thead>
-            <tr><th>#</th><th>Vendedor</th><th className="num">Números</th><th className="num">Total</th></tr>
+            <tr><th>#</th><th>Vendedor</th>{showSold && <th className="num">Números</th>}</tr>
           </thead>
           <tbody>
             {rest.map((s) => (
               <tr key={s.name + s.rank}>
                 <td className="rank-pos">{s.rank}º</td>
                 <td>{s.name}</td>
-                <td className="num">{s.sold_numbers}</td>
-                <td className="num">{fmt(s.sold_value)}</td>
+                {showSold && <td className="num">{s.sold_numbers}</td>}
               </tr>
             ))}
           </tbody>
