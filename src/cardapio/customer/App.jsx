@@ -51,6 +51,9 @@ function App() {
   const [bumpId, setBumpId] = useState(null);
   const [search, setSearch] = useState("");
   const sectionRefs = useRef({});
+  // Trava o scroll-spy logo após o toque na pílula, senão a rolagem suave
+  // sobrescreve a categoria escolhida no meio do caminho.
+  const spyLockUntil = useRef(0);
 
   const categorias = menu ? menu.categorias : [];
 
@@ -105,6 +108,14 @@ function App() {
   // scroll spy
   useEffect(() => {
     const onScroll = () => {
+      if (Date.now() < spyLockUntil.current) return;
+      // No fim da página a última categoria vence — seções curtas no final
+      // nunca cruzariam a linha de referência e a pílula ficaria errada.
+      const atBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 8;
+      if (atBottom && visibleCategorias.length) {
+        setActiveCat(visibleCategorias[visibleCategorias.length - 1].id);
+        return;
+      }
       const y = window.scrollY + 140;
       let cur = visibleCategorias[0]?.id;
       visibleCategorias.forEach((c) => {
@@ -120,7 +131,10 @@ function App() {
 
   const goToCat = (id) => {
     const el = sectionRefs.current[id];
-    if (el) window.scrollTo({ top: el.offsetTop - 118, behavior: "smooth" });
+    if (!el) return;
+    setActiveCat(id);
+    spyLockUntil.current = Date.now() + 700;
+    window.scrollTo({ top: el.offsetTop - 118, behavior: "smooth" });
   };
 
   // gera o pedido no servidor (número único, sem repetir entre celulares)

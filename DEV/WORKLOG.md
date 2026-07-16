@@ -1,5 +1,13 @@
 # WORKLOG
 
+## 2026-07-16 — Fix scroll-spy da última categoria
+
+- Bug (print do maestro): clicar em "Outros" navegava mas a pílula ficava em
+  "Doces" — a última seção é curta e o topo dela nunca cruza a linha de
+  referência do spy. Fix: no fim da página a última categoria visível vence;
+  o toque na pílula marca a categoria imediatamente com trava de 700ms para
+  a rolagem suave não sobrescrever.
+
 ## 2026-07-16 — Cardápio do cliente: busca + topo fixo
 
 - Bug de usabilidade: .nav era sticky mas o header (sticky, z-index maior)
