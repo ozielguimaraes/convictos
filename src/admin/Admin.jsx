@@ -10,6 +10,7 @@ import AvisosSection from "./sections/AvisosSection.jsx";
 import AcoesSection from "./sections/AcoesSection.jsx";
 import UsuariosSection from "./sections/UsuariosSection.jsx";
 import PerfisSection from "./sections/PerfisSection.jsx";
+import CardapioSection from "./sections/CardapioSection.jsx";
 
 // Cada seção corresponde a uma área do catálogo do servidor, com níveis
 // "<area>:view" (entra no menu) e "<area>:manage" (pode alterar).
@@ -18,6 +19,7 @@ const SECTIONS = [
   { key: "aparencia", label: "Aparência", emoji: "🎨" },
   { key: "avisos", label: "Avisos", emoji: "📢" },
   { key: "acoes", label: "Ações entre amigos", emoji: "🎟️" },
+  { key: "cardapio", label: "Cardápio", emoji: "🍔" },
   { key: "usuarios", label: "Usuários", emoji: "👥" },
   { key: "perfis", label: "Perfis de acesso", emoji: "🛡️" },
 ];
@@ -48,11 +50,6 @@ function Panel({ me, onLogout }) {
               <span className="nav-emoji">{s.emoji}</span>{s.label}
             </button>
           ))}
-          {me.permissions.includes("cardapio:view") && (
-            <a className="nav-item" href="/cardapio/admin/">
-              <span className="nav-emoji">🍔</span>Cardápio<span className="nav-ext">↗</span>
-            </a>
-          )}
         </nav>
         <div className="sb-foot">
           <div className="sb-user" title={me.email}>{me.name || me.email}</div>
@@ -76,6 +73,7 @@ function Panel({ me, onLogout }) {
           {section === "aparencia" && <AparenciaSection canManage={canManage("aparencia")} showToast={showToast} />}
           {section === "avisos" && <AvisosSection canManage={canManage("avisos")} showToast={showToast} />}
           {section === "acoes" && <AcoesSection canManage={canManage("acoes")} showToast={showToast} />}
+          {section === "cardapio" && <CardapioSection canManage={canManage("cardapio")} showToast={showToast} />}
           {section === "usuarios" && <UsuariosSection me={me} canManage={canManage("usuarios")} showToast={showToast} />}
           {section === "perfis" && <PerfisSection canManage={canManage("perfis")} showToast={showToast} />}
         </div>

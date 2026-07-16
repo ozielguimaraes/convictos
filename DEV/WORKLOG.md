@@ -1,5 +1,12 @@
 # WORKLOG
 
+## 2026-07-16 — Cardápio como seção do painel
+
+- Editor do cardápio extraído para src/cardapio/admin/MenuEditor.jsx e usado
+  em dois lugares: a nova seção "Cardápio" na sidebar do /admin/ (navegação
+  interna igual às demais seções) e a página standalone /cardapio/admin/,
+  que continua servindo o domínio cardapio.* sem mudanças.
+
 ## 2026-07-16 — URL RESTful do ranking (/rifa/<id>)
 
 - Regra do maestro (agora global em ~/.orquestrador/rules.md): sempre padrão
