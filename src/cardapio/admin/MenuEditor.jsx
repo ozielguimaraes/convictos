@@ -29,7 +29,8 @@ export default function MenuEditor({ canManage, showToast }) {
   const delItem = (ci, ii) => update((d) => { d.categorias[ci].itens.splice(ii, 1); });
   const moveItem = (ci, ii, posStr) => {
     const total = draft.categorias[ci].itens.length;
-    const target = Math.min(Math.max(parseInt(posStr, 10) || 1, 1), total) - 1;
+    const slot = Math.min(Math.max(Math.round((parseInt(posStr, 10) || 10) / 10), 1), total);
+    const target = slot - 1;
     if (target === ii) return;
     update((d) => { d.categorias[ci].itens.splice(target, 0, d.categorias[ci].itens.splice(ii, 1)[0]); });
   };
@@ -118,9 +119,10 @@ export default function MenuEditor({ canManage, showToast }) {
                 <input
                   className="pos-input"
                   type="number"
-                  min="1"
-                  max={c.itens.length}
-                  defaultValue={ii + 1}
+                  min="10"
+                  step="10"
+                  max={c.itens.length * 10}
+                  defaultValue={(ii + 1) * 10}
                   key={it.id + "-pos-" + ii}
                   aria-label="Posição do item"
                   disabled={c.itens.length <= 1}
