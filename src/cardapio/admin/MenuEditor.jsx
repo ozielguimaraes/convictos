@@ -27,6 +27,12 @@ export default function MenuEditor({ canManage, showToast }) {
   const editItem = (ci, ii, field, value) => update((d) => { d.categorias[ci].itens[ii][field] = value; });
   const editPrice = (ci, ii, value) => update((d) => { d.categorias[ci].itens[ii].preco = strToPrice(value); });
   const delItem = (ci, ii) => update((d) => { d.categorias[ci].itens.splice(ii, 1); });
+  const moveItem = (ci, ii, posStr) => {
+    const total = draft.categorias[ci].itens.length;
+    const target = Math.min(Math.max(parseInt(posStr, 10) || 1, 1), total) - 1;
+    if (target === ii) return;
+    update((d) => { d.categorias[ci].itens.splice(target, 0, d.categorias[ci].itens.splice(ii, 1)[0]); });
+  };
   const addItem = (ci) => update((d) => { d.categorias[ci].itens.push({ id: uid(), nome: "Novo item", desc: "", preco: 0 }); });
   const editCat = (ci, value) => update((d) => { d.categorias[ci].nome = value; });
   const delCat = (ci) => {
@@ -109,6 +115,19 @@ export default function MenuEditor({ canManage, showToast }) {
 
             {c.itens.map((it, ii) => (
               <div className="a-item" key={it.id}>
+                <input
+                  className="pos-input"
+                  type="number"
+                  min="1"
+                  max={c.itens.length}
+                  defaultValue={ii + 1}
+                  key={it.id + "-pos-" + ii}
+                  aria-label="Posição do item"
+                  disabled={c.itens.length <= 1}
+                  onFocus={(e) => e.target.select()}
+                  onBlur={(e) => moveItem(ci, ii, e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && e.target.blur()}
+                />
                 <div className="names">
                   <input className="in-nome" value={it.nome} placeholder="Nome do item" onChange={(e) => editItem(ci, ii, "nome", e.target.value)} />
                   <input className="in-desc" value={it.desc || ""} placeholder="Descrição (opcional)" onChange={(e) => editItem(ci, ii, "desc", e.target.value)} />
