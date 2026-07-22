@@ -107,6 +107,50 @@ create table if not exists avisos (
   updated_at timestamptz not null default now()
 );
 
+-- ---------- PATROCINADORES ----------
+
+-- Grade pública de patrocinadores (raiz do site). O tamanho do card no grid
+-- vem do plano — nunca expõe valor ou lista de benefícios publicamente.
+create table if not exists sponsors (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  emoji text not null default '',
+  plan text not null default 'bronze' check (plan in ('ouro', 'prata', 'bronze')),
+  url text not null default '',
+  -- banner: URL http(s) ou data-URI base64 (upload direto, sem storage externo).
+  banner text not null default '',
+  address text not null default '',
+  whatsapp text not null default '',
+  phone text not null default '',
+  instagram text not null default '',
+  visible boolean not null default true,
+  position int not null default 0,
+  created_at timestamptz not null default now()
+);
+
+-- Migração para bancos criados antes dos campos de contato/banner.
+alter table sponsors add column if not exists banner text not null default '';
+alter table sponsors add column if not exists address text not null default '';
+alter table sponsors add column if not exists whatsapp text not null default '';
+alter table sponsors add column if not exists phone text not null default '';
+alter table sponsors add column if not exists instagram text not null default '';
+
+-- Métricas públicas: visitas ao site e eventos por patrocinador (visualização
+-- de banner, cliques por tipo de link). Sem dado pessoal do visitante — só
+-- contadores, para prestação de contas aos patrocinadores.
+create table if not exists site_visits (
+  id bigserial primary key,
+  path text not null default '/',
+  created_at timestamptz not null default now()
+);
+
+create table if not exists sponsor_events (
+  id bigserial primary key,
+  sponsor_id uuid not null references sponsors(id) on delete cascade,
+  kind text not null check (kind in ('view', 'click_site', 'click_whatsapp', 'click_phone', 'click_instagram', 'click_address')),
+  created_at timestamptz not null default now()
+);
+
 -- ---------- CARDÁPIO (portado do cardapio-on) ----------
 
 create table if not exists categories (
@@ -265,5 +309,18 @@ begin
     insert into categories (name, theme, position)
       select 'Outros', 'verde-escuro', coalesce(max(position) + 1, 0) from categories;
     insert into schema_marks (name) values ('cardapio-categoria-outros');
+  end if;
+end $$;
+
+-- A raiz virou a página de patrocinadores (pedido do maestro, 2026-07-22); a
+-- antiga página de links (linktree) passou para /links/. Adiciona o acesso
+-- uma única vez — depois o admin pode editar ou remover sem que ele volte a
+-- cada deploy.
+do $$
+begin
+  if not exists (select 1 from schema_marks where name = 'links-page-seed-link') then
+    insert into links (label, url, emoji, position)
+      select 'Mais links', '/links/', '🔗', coalesce(max(position) + 1, 0) from links;
+    insert into schema_marks (name) values ('links-page-seed-link');
   end if;
 end $$;

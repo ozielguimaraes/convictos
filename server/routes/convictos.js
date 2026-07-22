@@ -10,6 +10,11 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 const asUuid = (v) => (UUID_RE.test(String(v)) ? v : null);
 
 const PROFILE_FIELDS = "title, subtitle, avatar_emoji, theme";
+const SPONSOR_FIELDS = "id, name, emoji, plan, url, banner, address, whatsapp, phone, instagram";
+const SPONSOR_CLICK_KINDS = ["click_site", "click_whatsapp", "click_phone", "click_instagram", "click_address"];
+// ~1.5MB base64 (~1MB de imagem original) — banner cabe direto no Postgres
+// sem precisar de storage externo nem volume persistente no deploy.
+const MAX_BANNER_LEN = 1_500_000;
 
 // ---------- público ----------
 
@@ -21,6 +26,63 @@ convictosRouter.get("/profile", async (req, res, next) => {
       "select id, label, url, emoji from links where visible order by position"
     );
     res.json({ ...profile.rows[0], links: links.rows });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// Grade pública de patrocinadores (raiz do site). Nunca expõe valor/benefícios
+// do plano — só nome, emoji, plano (define o tamanho no grid), banner e contatos.
+convictosRouter.get("/sponsors", async (req, res, next) => {
+  try {
+    const { rows } = await query(
+      `select ${SPONSOR_FIELDS} from sponsors where visible order by position`
+    );
+    res.json(rows);
+  } catch (e) {
+    next(e);
+  }
+});
+
+// Métricas públicas (sem dado pessoal do visitante) — para prestação de
+// contas aos patrocinadores. Falha silenciosa não existe: erro vira 400,
+// mas nunca derruba a navegação do visitante (chamado com fire-and-forget).
+
+convictosRouter.post("/visits", async (req, res, next) => {
+  try {
+    const path = typeof req.body?.path === "string" ? req.body.path.slice(0, 200) : "/";
+    await query("insert into site_visits (path) values ($1)", [path]);
+    res.status(201).json({ ok: true });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// Visualização em lote dos cards renderizados na grade (1 chamada por carregamento de página).
+convictosRouter.post("/sponsors/views", async (req, res, next) => {
+  try {
+    const ids = Array.isArray(req.body?.ids) ? req.body.ids.map(asUuid).filter(Boolean) : [];
+    if (ids.length === 0) return res.status(201).json({ ok: true });
+    await query(
+      "insert into sponsor_events (sponsor_id, kind) select id, 'view' from sponsors where id = any($1::uuid[])",
+      [ids]
+    );
+    res.status(201).json({ ok: true });
+  } catch (e) {
+    next(e);
+  }
+});
+
+convictosRouter.post("/sponsors/:id/click", async (req, res, next) => {
+  try {
+    const id = asUuid(req.params.id);
+    if (!id) return res.status(400).json({ error: "id inválido" });
+    if (!SPONSOR_CLICK_KINDS.includes(req.body?.kind)) return res.status(400).json({ error: "tipo de clique inválido" });
+    await query(
+      "insert into sponsor_events (sponsor_id, kind) select $1, $2 where exists (select 1 from sponsors where id = $1)",
+      [id, req.body.kind]
+    );
+    res.status(201).json({ ok: true });
   } catch (e) {
     next(e);
   }
@@ -100,6 +162,173 @@ convictosRouter.put("/admin/links", requirePermission("links:manage"), async (re
       await client.query("delete from links where not (id = any($1::uuid[]))", [keep]);
     });
     const { rows } = await query("select id, label, url, emoji, visible from links order by position");
+    res.json(rows);
+  } catch (e) {
+    next(e);
+  }
+});
+
+convictosRouter.get("/admin/sponsors", requirePermission("patrocinadores:view"), async (req, res, next) => {
+  try {
+    const { rows } = await query(
+      `select ${SPONSOR_FIELDS}, visible from sponsors order by position`
+    );
+    res.json(rows);
+  } catch (e) {
+    next(e);
+  }
+});
+
+// Relatório de métricas para prestação de contas: visitas totais do site +
+// visualizações/cliques por patrocinador (contadores acumulados, sem filtro de data).
+// dias exibidos na quebra diária do relatório (padrão 30, teto 90).
+function reportDays(req) {
+  const n = parseInt(req.query.days, 10);
+  return Number.isFinite(n) ? Math.min(Math.max(n, 1), 90) : 30;
+}
+
+async function buildSponsorsReport(days) {
+  const visits = await query("select count(*)::int as total from site_visits");
+  const sponsors = await query(`
+    select s.id, s.name,
+      count(*) filter (where e.kind = 'view') as views,
+      count(*) filter (where e.kind = 'click_site') as clicks_site,
+      count(*) filter (where e.kind = 'click_whatsapp') as clicks_whatsapp,
+      count(*) filter (where e.kind = 'click_phone') as clicks_phone,
+      count(*) filter (where e.kind = 'click_instagram') as clicks_instagram,
+      count(*) filter (where e.kind = 'click_address') as clicks_address
+    from sponsors s
+    left join sponsor_events e on e.sponsor_id = s.id
+    group by s.id, s.name
+    order by s.position
+  `);
+  // Visitas por dia (últimos N dias, com dia zerado quando não houve visita).
+  const dailyVisits = await query(
+    `select to_char(d::date, 'YYYY-MM-DD') as date, coalesce(v.c, 0)::int as visits
+     from generate_series(current_date - ($1::int - 1), current_date, interval '1 day') d
+     left join (
+       select date_trunc('day', created_at)::date as day, count(*) as c
+       from site_visits
+       where created_at >= now() - ($1 || ' days')::interval
+       group by 1
+     ) v on v.day = d::date
+     order by d`,
+    [days]
+  );
+  // Visualizações/cliques por patrocinador e por dia (só dias com atividade).
+  const dailySponsors = await query(
+    `select s.id as sponsor_id, s.name as sponsor_name,
+       to_char(date_trunc('day', e.created_at), 'YYYY-MM-DD') as date,
+       count(*) filter (where e.kind = 'view')::int as views,
+       count(*) filter (where e.kind like 'click_%')::int as clicks
+     from sponsor_events e
+     join sponsors s on s.id = e.sponsor_id
+     where e.created_at >= now() - ($1 || ' days')::interval
+     group by s.id, s.name, date_trunc('day', e.created_at)
+     order by date, s.position`,
+    [days]
+  );
+  return {
+    totalVisits: visits.rows[0].total,
+    sponsors: sponsors.rows,
+    dailyVisits: dailyVisits.rows,
+    dailySponsors: dailySponsors.rows,
+  };
+}
+
+convictosRouter.get("/admin/sponsors/report", requirePermission("patrocinadores:view"), async (req, res, next) => {
+  try {
+    res.json(await buildSponsorsReport(reportDays(req)));
+  } catch (e) {
+    next(e);
+  }
+});
+
+function csvField(v) {
+  const s = String(v ?? "");
+  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+}
+function csvRow(fields) {
+  return fields.map(csvField).join(",") + "\r\n";
+}
+
+convictosRouter.get("/admin/sponsors/report.csv", requirePermission("patrocinadores:view"), async (req, res, next) => {
+  try {
+    const days = reportDays(req);
+    const report = await buildSponsorsReport(days);
+    let csv = "﻿"; // BOM: acentos abrem certo no Excel.
+    csv += csvRow(["Relatório de patrocinadores — Convictos"]);
+    csv += csvRow([`Visitas totais ao site: ${report.totalVisits}`]);
+    csv += csvRow([`Período da quebra diária: últimos ${days} dias`]);
+    csv += "\r\n";
+    csv += csvRow(["Patrocinador", "Views", "Cliques site", "Cliques WhatsApp", "Cliques telefone", "Cliques Instagram", "Cliques endereço"]);
+    for (const s of report.sponsors) {
+      csv += csvRow([s.name, s.views, s.clicks_site, s.clicks_whatsapp, s.clicks_phone, s.clicks_instagram, s.clicks_address]);
+    }
+    csv += "\r\n";
+    csv += csvRow(["Visitas ao site por dia"]);
+    csv += csvRow(["Data", "Visitas"]);
+    for (const d of report.dailyVisits) csv += csvRow([d.date, d.visits]);
+    csv += "\r\n";
+    csv += csvRow(["Patrocinador por dia"]);
+    csv += csvRow(["Data", "Patrocinador", "Views", "Cliques"]);
+    for (const d of report.dailySponsors) csv += csvRow([d.date, d.sponsor_name, d.views, d.clicks]);
+
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+    res.setHeader("Content-Disposition", `attachment; filename="patrocinadores-relatorio-${days}dias.csv"`);
+    res.send(csv);
+  } catch (e) {
+    next(e);
+  }
+});
+
+// Substitui a lista inteira de patrocinadores de forma atômica (mesma
+// estratégia do replace_menu / admin/links: ids existentes são mantidos).
+const SPONSOR_PLANS = ["ouro", "prata", "bronze"];
+convictosRouter.put("/admin/sponsors", requirePermission("patrocinadores:manage"), async (req, res, next) => {
+  try {
+    const list = req.body;
+    if (!Array.isArray(list)) return res.status(400).json({ error: "esperado um array de patrocinadores" });
+    for (const s of list) {
+      if (!s.name) return res.status(400).json({ error: "todo patrocinador precisa de nome" });
+      if (!SPONSOR_PLANS.includes(s.plan)) return res.status(400).json({ error: "plano inválido" });
+      if ((s.banner || "").length > MAX_BANNER_LEN) {
+        return res.status(400).json({ error: `banner de "${s.name}" é grande demais — use uma imagem menor ou um link externo` });
+      }
+    }
+    await withTransaction(async (client) => {
+      const keep = [];
+      for (let i = 0; i < list.length; i++) {
+        const s = list[i];
+        const id = asUuid(s.id);
+        const exists = id
+          ? (await client.query("select 1 from sponsors where id = $1", [id])).rows.length
+          : 0;
+        const values = [
+          s.name, s.emoji || "", s.plan, s.url || "", s.banner || "",
+          s.address || "", s.whatsapp || "", s.phone || "", s.instagram || "",
+          s.visible !== false, i,
+        ];
+        if (exists) {
+          await client.query(
+            `update sponsors set name = $1, emoji = $2, plan = $3, url = $4, banner = $5,
+               address = $6, whatsapp = $7, phone = $8, instagram = $9, visible = $10, position = $11
+             where id = $12`,
+            [...values, id]
+          );
+          keep.push(id);
+        } else {
+          const ins = await client.query(
+            `insert into sponsors (name, emoji, plan, url, banner, address, whatsapp, phone, instagram, visible, position)
+             values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) returning id`,
+            values
+          );
+          keep.push(ins.rows[0].id);
+        }
+      }
+      await client.query("delete from sponsors where not (id = any($1::uuid[]))", [keep]);
+    });
+    const { rows } = await query(`select ${SPONSOR_FIELDS}, visible from sponsors order by position`);
     res.json(rows);
   } catch (e) {
     next(e);

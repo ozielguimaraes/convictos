@@ -1,5 +1,77 @@
 # WORKLOG
 
+## 2026-07-22 — Métrica por dia + exportação CSV do relatório de patrocinadores
+
+- Pedido do maestro: quebra diária das métricas, e poder gerar depois um
+  relatório (csv ou pdf) com a mesma UI/design tokens do admin.
+- `GET /api/admin/sponsors/report?days=N` (padrão 30, teto 90) agora devolve,
+  além do total acumulado e dos totais por patrocinador (como já era):
+  `dailyVisits` (visitas do site por dia, dias sem visita aparecem com 0) e
+  `dailySponsors` (views/cliques por patrocinador nos dias com atividade).
+- Nova rota `GET /api/admin/sponsors/report.csv?days=N` gera CSV com BOM
+  (acentua certo no Excel) a partir da mesma agregação — sem biblioteca nova.
+  Aba Métricas ganhou seletor de período (7/14/30/90 dias), um mini-gráfico
+  de barras das visitas diárias e a tabela "patrocinador por dia", tudo com
+  as classes/tokens já usados no admin (cardapio.css/admin.css).
+- PDF com a mesma identidade visual fica pendente: exigiria uma dependência
+  nova (ex. puppeteer, pra renderizar HTML com as variáveis de cor do
+  cardápio em PDF) — não entrei nisso sem confirmar a lib com o maestro.
+- Não validei end-to-end contra o Postgres nesta rodada (sandbox sem
+  permissão pra reiniciar o processo da API/rodar `node --check`) — só
+  `npm run build` (compila limpo) e revisão manual do SQL/rotas. Recomendo
+  testar a aba Métricas e o botão "Exportar CSV" pelo navegador antes de
+  considerar fechado.
+
+## 2026-07-22 — Ícones oficiais de Instagram/WhatsApp no card de patrocinador
+
+- Troquei os emojis genéricos (💬📷) pelos ícones reais das marcas — SVG
+  inline (sem CDN externo): WhatsApp com o verde/telefone oficial, Instagram
+  com o gradiente e a câmera da identidade atual (rebrand de 2016). Ícones
+  maiores (34px, 42px no plano Ouro) e com padding interno menor que os
+  badges de emoji (site/telefone/endereço), que continuam como estavam.
+
+## 2026-07-22 — Banner, contatos (WhatsApp/telefone/Instagram/endereço) e métricas dos patrocinadores
+
+- Pedido do maestro: preparar o cadastro de patrocinador para banner e
+  contatos antes de ter os dados reais, e coletar métricas para prestação de
+  contas. Cada contato só aparece no card público se estiver preenchido.
+- Sem storage externo nem volume persistente no deploy (Coolify reconstrói o
+  container do zero a cada push) — banner é guardado como base64/URL direto
+  na coluna `banner` (texto) do Postgres, que já é persistente. Teto de
+  ~1.5MB por imagem (validado no servidor); limite do body do Express subiu
+  de 1mb para 8mb para caber a lista inteira. Admin pode enviar arquivo
+  (convertido no navegador) ou colar uma URL — os dois preenchem o mesmo campo.
+- Novos campos em `sponsors`: banner, address, whatsapp, phone, instagram.
+  Card público mostra um ícone por contato preenchido (🌐 site, 💬 WhatsApp
+  via wa.me, ☎️ telefone via tel:, 📷 Instagram, 📍 endereço via Google Maps),
+  cada clique dispara um evento rastreado.
+- Métricas: tabelas `site_visits` e `sponsor_events` (kind: view/click_*).
+  Sem dado pessoal do visitante — só contadores. Rotas públicas
+  `POST /api/visits`, `POST /api/sponsors/views` (lote, 1x por carregamento
+  da página), `POST /api/sponsors/:id/click`. Relatório admin em
+  `GET /api/admin/sponsors/report` (mesma permissão `patrocinadores:view`),
+  exibido numa aba "📊 Métricas" dentro da seção Patrocinadores.
+- Sem date-range nem exportação (CSV/PDF) por enquanto — só contadores
+  acumulados. Também sem proteção antiabuso nos endpoints públicos de
+  métricas (mesmo padrão de simplicidade do resto do app).
+
+## 2026-07-22 — Raiz virou a grade de patrocinadores; linktree mudou para /links/
+
+- Pedido do maestro: a raiz (antes o linktree) agora mostra a grade pública de
+  patrocinadores, com as cores do cardápio (creme/verde/laranja). O tamanho do
+  card no grid vem do plano (Ouro span 4 colunas, Prata span 2, Bronze span 1)
+  — nunca expõe valor nem lista de benefícios, só nome/emoji/link opcional.
+- Nova tabela `sponsors` + rotas `GET /api/sponsors` (pública) e
+  `GET/PUT /api/admin/sponsors` (mesma estratégia replace-list do admin/links).
+  Nova área de permissão `patrocinadores` e seção "Patrocinadores" no admin.
+- O linktree original (tabela `links`, sem mudança de lógica) passou para a
+  rota `/links/` (novo entry no vite.config.js). Seed único (schema_marks
+  `links-page-seed-link`) adiciona "Mais links → /links/" à lista de links já
+  existente, que agora também alimenta uma faixa de navegação rápida no topo
+  da página de patrocinadores (Avisos, Cardápio, Mais links).
+- Sem infra de upload de imagem no projeto — logo do patrocinador é
+  emoji/símbolo, mesmo padrão já usado em links e no avatar do perfil.
+
 ## 2026-07-16 — Fix scroll-spy da última categoria
 
 - Bug (print do maestro): clicar em "Outros" navegava mas a pílula ficava em

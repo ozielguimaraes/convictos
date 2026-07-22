@@ -25,6 +25,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: resolve(__dirname, "index.html"),
+        links: resolve(__dirname, "links/index.html"),
         avisos: resolve(__dirname, "avisos/index.html"),
         rifa: resolve(__dirname, "rifa/index.html"),
         admin: resolve(__dirname, "admin/index.html"),

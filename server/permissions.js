@@ -4,6 +4,7 @@
    basta guardar o manage. A UI monta o menu a partir de /api/auth/me. */
 export const AREAS = [
   { key: "links", label: "Links da página inicial" },
+  { key: "patrocinadores", label: "Patrocinadores" },
   { key: "aparencia", label: "Aparência" },
   { key: "avisos", label: "Avisos" },
   { key: "acoes", label: "Ações entre amigos" },

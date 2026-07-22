@@ -5,6 +5,7 @@ import { api } from "../lib/api.js";
 import Login from "../components/Login.jsx";
 import { useToast } from "./useToast.js";
 import LinksSection from "./sections/LinksSection.jsx";
+import PatrocinadoresSection from "./sections/PatrocinadoresSection.jsx";
 import AparenciaSection from "./sections/AparenciaSection.jsx";
 import AvisosSection from "./sections/AvisosSection.jsx";
 import AcoesSection from "./sections/AcoesSection.jsx";
@@ -16,6 +17,7 @@ import CardapioSection from "./sections/CardapioSection.jsx";
 // "<area>:view" (entra no menu) e "<area>:manage" (pode alterar).
 const SECTIONS = [
   { key: "links", label: "Links", emoji: "🔗" },
+  { key: "patrocinadores", label: "Patrocinadores", emoji: "🤝" },
   { key: "aparencia", label: "Aparência", emoji: "🎨" },
   { key: "avisos", label: "Avisos", emoji: "📢" },
   { key: "acoes", label: "Ações entre amigos", emoji: "🎟️" },
@@ -70,6 +72,7 @@ function Panel({ me, onLogout }) {
             <div className="ro-note">👁 Você tem acesso somente de visualização nesta seção.</div>
           )}
           {section === "links" && <LinksSection canManage={canManage("links")} showToast={showToast} />}
+          {section === "patrocinadores" && <PatrocinadoresSection canManage={canManage("patrocinadores")} showToast={showToast} />}
           {section === "aparencia" && <AparenciaSection canManage={canManage("aparencia")} showToast={showToast} />}
           {section === "avisos" && <AvisosSection canManage={canManage("avisos")} showToast={showToast} />}
           {section === "acoes" && <AcoesSection canManage={canManage("acoes")} showToast={showToast} />}

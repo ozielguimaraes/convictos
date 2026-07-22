@@ -232,3 +232,44 @@ input { font-family: inherit; }
 .perfil-select:focus { outline: none; border-color: var(--green); }
 .perfil-name { flex: 1; font-family: var(--font-head); font-weight: 800; font-size: 16px; color: var(--green-dark); border: none; background: transparent; border-bottom: 2px solid transparent; padding: 2px 0; min-width: 0; }
 .perfil-name:focus { outline: none; border-bottom-color: var(--green); }
+
+/* ---------- PATROCINADORES ---------- */
+.sp-tabs { display: flex; gap: 8px; margin-bottom: 14px; }
+.sp-tab { font-family: var(--font-head); font-weight: 700; font-size: 13px; padding: 8px 14px; border-radius: 999px; background: var(--paper); color: var(--muted); border: 1.5px solid var(--line); }
+.sp-tab.active { background: var(--green-dark); color: #fff; border-color: var(--green-dark); }
+
+.sp-drop {
+  display: flex; align-items: center; justify-content: center; text-align: center;
+  min-height: 56px; border: 1.5px dashed var(--line); border-radius: 12px;
+  background: #fff; cursor: pointer; padding: 8px; transition: border-color 0.15s ease, background 0.15s ease;
+}
+.sp-drop.drag { border-color: var(--green); background: rgba(147, 184, 92, 0.12); }
+.sp-drop-hint { font-size: 12px; font-weight: 600; color: var(--muted); }
+.sp-banner-preview { max-width: 100%; max-height: 60px; border-radius: 8px; object-fit: contain; }
+.sp-banner-file-input { display: none; }
+
+.sp-input-icon { position: relative; }
+.sp-input-icon .sp-field-glyph { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); font-size: 13px; line-height: 1; pointer-events: none; }
+.sp-input-icon input.in-url { padding-left: 32px; }
+
+.sp-report-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.sp-report-actions { display: flex; align-items: center; gap: 8px; }
+.sp-days-select { width: auto; padding: 8px 10px; font-size: 13px; }
+.btn-export {
+  font-family: var(--font-head); font-weight: 700; font-size: 12.5px;
+  color: #fff; background: var(--orange); border-radius: 10px; padding: 9px 14px;
+  text-decoration: none; white-space: nowrap;
+}
+.btn-export:active { transform: translateY(1px); }
+.sp-report-subhead { font-family: var(--font-head); font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); margin: 22px 0 10px; }
+
+.sp-report-total { font-size: 15px; font-weight: 700; color: var(--green-dark); margin: 14px 0 16px; }
+.sp-report-table-wrap { overflow-x: auto; }
+.sp-report-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.sp-report-table th, .sp-report-table td { padding: 8px 10px; text-align: left; white-space: nowrap; border-bottom: 1px solid var(--line); }
+.sp-report-table th { color: var(--muted); font-weight: 700; font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.3px; }
+
+.sp-daily-visits { display: flex; align-items: flex-end; gap: 4px; height: 90px; padding: 4px 0; overflow-x: auto; }
+.sp-day-bar { flex: 0 0 auto; width: 18px; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 4px; }
+.sp-day-bar-fill { width: 100%; min-height: 2px; background: var(--green); border-radius: 3px 3px 0 0; }
+.sp-day-bar-label { font-size: 9px; color: var(--muted); transform: rotate(-45deg); transform-origin: top left; white-space: nowrap; }
