@@ -21,10 +21,12 @@ Admin: `microzapple@gmail.com` — senha definida localmente via
 ## Produção (Coolify)
 
 - App "Landing page" no projeto Convictos (coolify.querc.app), domínios
-  convictos.querc.app + cardapio.querc.app, deploy por push na main.
+  convictos.querc.app + cardapio.querc.app + url.querc.app, deploy por push
+  na main.
 - DATABASE_URL aponta para o Postgres do Coolify no VPS (database convictos).
 - Após deploy com mudança de schema: `npm run db:schema` no terminal do
-  container da app (Coolify → Terminal).
+  container da app (Coolify → Terminal). Necessário após este deploy (cria
+  a tabela `short_links`).
 
 ## Usuários
 
@@ -35,3 +37,6 @@ Admin: `microzapple@gmail.com` — senha definida localmente via
 
 - Configurar SMTP real no `.env` (produção: variáveis SMTP_* no Coolify).
 - Tela de pedidos no admin do cardápio (pendência herdada do cardapio-on).
+- Encurtador (aba "Encurtador" no /admin/): confirmar DNS de url.querc.app
+  e rodar `npm run db:schema` em produção após o primeiro deploy com essa
+  mudança.

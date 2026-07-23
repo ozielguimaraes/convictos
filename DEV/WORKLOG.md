@@ -222,3 +222,24 @@
 - Pendente para o 1º deploy: variáveis no Coolify (DATABASE_URL do Postgres do
   VPS, APP_URL, SMTP_*), criar database/role no Postgres do servidor e rodar
   db:schema + admin:create; DNS dos dois domínios apontando pro VPS.
+
+## 2026-07-22 — Encurtador de URLs (url.querc.app)
+
+- Nova seção "Encurtador" no /admin/ (permissão `encurtador:view`/`manage`,
+  Gestor ganha manage via migração idempotente em schema.sql).
+- Tabela `short_links` (code unique, target_url, click_count, created_by).
+  Código: 7 chars, alfabeto sem `0/O/1/l/I`, gerado com crypto.randomBytes,
+  retry em colisão (unique constraint).
+- server/index.js: middleware novo (antes do bloco de static/dist) — se
+  `Host` começar com `url.`, resolve o path como código e faz 302 pra
+  target_url (incrementa click_count); raiz redireciona pro hub; código
+  inexistente → 404 simples. Não interfere em outros domínios.
+- server/routes/encurtador.js: GET/POST /api/admin/encurtador,
+  DELETE /api/admin/encurtador/:id.
+- Coolify (coolify.querc.app → Convictos → Landing page): domínio
+  `https://url.querc.app` adicionado à lista de Domains do mesmo recurso
+  (agora `convictos.querc.app,cardapio.querc.app,url.querc.app`); aplicado
+  no redeploy automático do push desta mudança.
+- Pendente: confirmar que o DNS de `url.querc.app` já aponta pro VPS (se
+  ainda não estiver, o Let's Encrypt do Coolify não emite certificado);
+  rodar `npm run db:schema` no container após o deploy (cria `short_links`).

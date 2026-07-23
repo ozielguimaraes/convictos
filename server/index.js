@@ -9,6 +9,7 @@ import { convictosRouter } from "./routes/convictos.js";
 import { cardapioRouter } from "./routes/cardapio.js";
 import { acoesRouter } from "./routes/acoes.js";
 import { accessProfilesRouter } from "./routes/accessProfiles.js";
+import { encurtadorRouter, resolveShortLink } from "./routes/encurtador.js";
 
 // 404 com a identidade visual do site (cores do cardápio) em vez do "Cannot
 // GET" cru do Express. %HOME% é trocado pela home certa (raiz ou /cardapio/,
@@ -65,6 +66,24 @@ app.use("/api/cardapio", cardapioRouter);
 app.use("/api", acoesRouter);
 app.use("/api", accessProfilesRouter);
 app.use("/api", convictosRouter);
+app.use("/api", encurtadorRouter);
+
+// Subdomínio do encurtador: url.querc.app/<code> redireciona pra URL
+// configurada no admin. Roda antes do static/dist pois não serve nenhum
+// build — é só lookup no banco + 302. Fica de fora se não for esse host.
+app.get(/^\/[A-Za-z0-9]{0,32}\/?$/, async (req, res, next) => {
+  const host = String(req.headers.host || "");
+  if (!host.startsWith("url.")) return next();
+  const code = req.path.replace(/^\/|\/$/g, "");
+  if (!code) return res.redirect(302, "https://convictos.querc.app");
+  try {
+    const target = await resolveShortLink(code);
+    if (!target) return res.status(404).send("Link não encontrado.");
+    res.redirect(302, target);
+  } catch (e) {
+    next(e);
+  }
+});
 
 // Em produção serve o build do Vite. O domínio cardapio.querc.app é reescrito
 // para as páginas em /cardapio/ (mesmo build, dois domínios).

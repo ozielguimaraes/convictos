@@ -1,5 +1,27 @@
 # VERIFY
 
+## 2026-07-22 — Encurtador de URLs (url.querc.app)
+
+- `npm run build` — ok. `npm run db:schema` — cria `short_links` e migra
+  `encurtador:manage` no perfil Gestor, idempotente.
+- API via curl (build de produção em :3001, sessão simulada via insert
+  direto em `sessions`):
+  - POST /api/admin/encurtador `{target_url: "https://claude.ai/teste"}` →
+    201, código de 7 chars gerado (ex: `x2v7ffm`).
+  - POST com `target_url: "nao-e-url"` → 400 "URL inválida".
+  - GET /api/admin/encurtador → lista o link criado.
+  - DELETE /api/admin/encurtador/:id → 200, some da listagem.
+  - `curl -H 'Host: url.querc.app' :3001/<code>` → 302 pro target_url,
+    click_count incrementado (verificado no banco).
+  - `curl -H 'Host: url.querc.app' :3001/naoexiste` → 404.
+  - `curl -H 'Host: url.querc.app' :3001/` → 302 pra convictos.querc.app.
+  - `curl -H 'Host: convictos.querc.app' :3001/<code>` → não interceptado
+    (cai no 404 normal do SPA), confirma que o middleware é isolado por Host.
+- Coolify: domínio `https://url.querc.app` adicionado ao app "Landing page"
+  via UI (settings salvos com sucesso).
+- Pendente verificar em produção após deploy: certificado SSL emitido e
+  `npm run db:schema` rodado no container.
+
 ## 2026-07-16 — permissões granulares
 
 - Perfil "Observador de ações" (acoes:view): lista e detalhe de ações 200;

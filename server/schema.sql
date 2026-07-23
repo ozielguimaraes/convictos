@@ -64,6 +64,12 @@ update admin_users set extra_permissions = (
   from unnest(extra_permissions) p
 ) where exists (select 1 from unnest(extra_permissions) p where p not like '%:%');
 
+-- Encurtador de links (novo): dá ao perfil Gestor ("tudo, exceto perfis")
+-- sem duplicar se a migração já rodou.
+update access_profiles
+  set permissions = array_append(permissions, 'encurtador:manage')
+  where name = 'Gestor' and not ('encurtador:manage' = any(permissions));
+
 -- Tokens de login por e-mail: o mesmo registro serve o OTP de 6 dígitos
 -- e o link mágico (magic_token), enviados no mesmo e-mail.
 create table if not exists login_tokens (
@@ -247,6 +253,17 @@ alter table acao_blocks add column if not exists returned boolean not null defau
 create table if not exists schema_marks (
   name text primary key,
   applied_at timestamptz not null default now()
+);
+
+-- ---------- ENCURTADOR ----------
+
+create table if not exists short_links (
+  id uuid primary key default gen_random_uuid(),
+  code text not null unique,
+  target_url text not null,
+  created_by int references admin_users(id) on delete set null,
+  click_count int not null default 0,
+  created_at timestamptz not null default now()
 );
 
 -- ---------- SEMENTES ----------

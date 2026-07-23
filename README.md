@@ -1,6 +1,6 @@
 # Convictos
 
-Full-stack hub application (link tree + announcement board + menu management) served at **https://convictos.querc.app** and **https://cardapio.querc.app**.
+Full-stack hub application (link tree + announcement board + menu management + URL shortener) served at **https://convictos.querc.app**, **https://cardapio.querc.app** and **https://url.querc.app**.
 
 ## Overview
 
@@ -9,6 +9,7 @@ Convictos is a modern web application built with Node.js backend and React front
 **Live URLs:**
 - Main hub: https://convictos.querc.app
 - Cardápio (menu) subdomain: https://cardapio.querc.app
+- URL shortener subdomain: https://url.querc.app (links managed from the `/admin` panel → "Encurtador")
 
 ## Tech Stack
 
@@ -70,11 +71,13 @@ Protected by authentication (password, OTP, or magic link):
 - **Appearance** — theme, avatar, title
 - **Announcements** — manage bulletin board
 - **Menu Editor** (`/cardapio/admin/`) — add/edit/delete menu items
+- **Encurtador** — shorten a URL, get a `url.querc.app/<code>` link, track clicks
 
 ### Multi-Tenant Domain Routing
-- Both `convictos.querc.app` and `cardapio.querc.app` point to the same backend
+- `convictos.querc.app`, `cardapio.querc.app` and `url.querc.app` point to the same backend
 - Express rewrites `cardapio.*` requests to `/cardapio/` paths
-- Shared asset cache (`/assets`) across both domains
+- `url.*` requests skip static serving entirely: the path is looked up as a short code and 302-redirected to its target
+- Shared asset cache (`/assets`) across all domains
 
 ## Getting Started
 
@@ -150,7 +153,7 @@ The Dockerfile handles this: builds React, then runs Node.js to serve both.
    - `PORT` — `3001` (Coolify exposes via reverse proxy)
 
 4. **DNS & Reverse Proxy:**
-   - Point `convictos.querc.app` and `cardapio.querc.app` to the same service
+   - Point `convictos.querc.app`, `cardapio.querc.app` and `url.querc.app` to the same service
    - Coolify (or nginx) terminates HTTPS; Express runs on port 3001
    - Let's Encrypt auto-provisioning can be set up in Coolify
 
@@ -184,6 +187,12 @@ In dev mode (no SMTP), codes and links are **printed to console** for easy testi
 - `PUT /api/cardapio/:id` — update (admin)
 - `DELETE /api/cardapio/:id` — delete (admin)
 
+### Encurtador (URL shortener)
+- `GET /api/admin/encurtador` — list short links (admin)
+- `POST /api/admin/encurtador` — shorten a URL, returns the generated code (admin)
+- `DELETE /api/admin/encurtador/:id` — delete a short link (admin)
+- `GET https://url.querc.app/<code>` — 302 redirect to the target URL, increments click count
+
 ### Health
 - `GET /api/health` — simple health check (returns `{ ok: true }`)
 
@@ -196,6 +205,7 @@ The `schema.sql` file defines:
 - `convictos_appearance` — hub theme (title, avatar_url, theme_color)
 - `avisos` — announcements (title, content, created_at, active)
 - `cardapio_itens` — menu items (name, description, price, category, image)
+- `short_links` — URL shortener (code, target_url, click_count)
 - (and more)
 
 All tables are designed with proper indexes and constraints. Collation is `pt-BR` (Unicode, case-insensitive for Portuguese).
