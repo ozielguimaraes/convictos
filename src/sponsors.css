@@ -84,10 +84,11 @@ body {
 .sp-contact:active { transform: scale(0.9); }
 
 /* Ícones de marca (Instagram/WhatsApp) já são o "selo" oficial completo —
-   sem fundo próprio, mas com o mesmo tamanho e um respiro dos genéricos
-   (site/telefone/endereço) pra não ficarem colados/pesados ao lado deles. */
+   sem fundo próprio. Tamanho e margem em px explícitos (não porcentagem/padding
+   herdado): com padding, o SVG (width/height 100%) media errado sua caixa dentro
+   do grid item não-esticado e ficava cortado pelo border-radius em alguns navegadores. */
 .sp-contact.brand-instagram, .sp-contact.brand-whatsapp {
-  background: none; padding: 2px;
+  width: 28px; height: 28px; background: none; margin: 2px;
 }
 .sp-contact.brand-instagram svg { border-radius: 22%; }
 
@@ -102,7 +103,7 @@ body {
 .sp-card.plan-ouro .sp-banner { max-height: 170px; }
 .sp-card.plan-ouro .sp-name { font-size: 18px; }
 .sp-card.plan-ouro .sp-contact { background: rgba(255, 255, 255, 0.18); width: 40px; height: 40px; font-size: 23px; }
-.sp-card.plan-ouro .sp-contact.brand-instagram, .sp-card.plan-ouro .sp-contact.brand-whatsapp { background: none; }
+.sp-card.plan-ouro .sp-contact.brand-instagram, .sp-card.plan-ouro .sp-contact.brand-whatsapp { width: 36px; height: 36px; background: none; margin: 2px; }
 
 .sp-card.plan-prata {
   grid-column: span 2;
