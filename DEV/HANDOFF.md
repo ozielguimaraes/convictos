@@ -37,6 +37,6 @@ Admin: `microzapple@gmail.com` — senha definida localmente via
 
 - Configurar SMTP real no `.env` (produção: variáveis SMTP_* no Coolify).
 - Tela de pedidos no admin do cardápio (pendência herdada do cardapio-on).
-- Encurtador (aba "Encurtador" no /admin/): confirmar DNS de url.querc.app
-  e rodar `npm run db:schema` em produção após o primeiro deploy com essa
-  mudança.
+- Encurtador (aba "Encurtador" no /admin/): já em produção (DNS, SSL e
+  db:schema confirmados em 2026-07-23). Falta só um teste manual pelo
+  navegador logado, ainda não feito.

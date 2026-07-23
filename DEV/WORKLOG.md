@@ -243,11 +243,10 @@
 - Deploy verificado: build + rolling update concluídos sem erro. DNS de
   url.querc.app já apontava pro VPS (mesmo IP de cardapio.querc.app);
   `https://url.querc.app/` responde 302 → convictos.querc.app com SSL ok.
-- **Pendente (não executado — bloqueado pelo classificador de segurança por
-  falta de confirmação explícita):** rodar `npm run db:schema` no terminal
-  do container em produção para criar a tabela `short_links`. Sem isso, a
-  aba Encurtador do /admin/ vai dar erro 500 ao criar/listar links em
-  produção (localmente já testado e funcionando).
+- `npm run db:schema` rodado no terminal do container em produção (Coolify,
+  com confirmação explícita do maestro): "Schema aplicado com sucesso." —
+  tabela `short_links` criada. Verificado: GET /api/admin/encurtador em
+  convictos.querc.app → 401 (guarda de sessão ativa, sem erro 500).
 
 ## 2026-07-23 — Encurtador: editar URL + código customizado
 
