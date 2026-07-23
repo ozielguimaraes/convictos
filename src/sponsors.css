@@ -84,9 +84,10 @@ body {
 .sp-contact:active { transform: scale(0.9); }
 
 /* Ícones de marca (Instagram/WhatsApp) já são o "selo" oficial completo —
-   sem fundo próprio, só a folga mínima pra não colar nos vizinhos. */
+   sem fundo próprio, mas com o mesmo tamanho e um respiro dos genéricos
+   (site/telefone/endereço) pra não ficarem colados/pesados ao lado deles. */
 .sp-contact.brand-instagram, .sp-contact.brand-whatsapp {
-  width: 34px; height: 34px; background: none; padding: 0;
+  background: none; padding: 2px;
 }
 .sp-contact.brand-instagram svg { border-radius: 22%; }
 
@@ -101,7 +102,7 @@ body {
 .sp-card.plan-ouro .sp-banner { max-height: 170px; }
 .sp-card.plan-ouro .sp-name { font-size: 18px; }
 .sp-card.plan-ouro .sp-contact { background: rgba(255, 255, 255, 0.18); width: 40px; height: 40px; font-size: 23px; }
-.sp-card.plan-ouro .sp-contact.brand-instagram, .sp-card.plan-ouro .sp-contact.brand-whatsapp { background: none; width: 42px; height: 42px; }
+.sp-card.plan-ouro .sp-contact.brand-instagram, .sp-card.plan-ouro .sp-contact.brand-whatsapp { background: none; }
 
 .sp-card.plan-prata {
   grid-column: span 2;
