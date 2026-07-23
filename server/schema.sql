@@ -266,6 +266,81 @@ create table if not exists short_links (
   created_at timestamptz not null default now()
 );
 
+-- ---------- PESQUISAS DE SATISFAÇÃO ----------
+
+create table if not exists pesquisas (
+  id uuid primary key default gen_random_uuid(),
+  title text not null,
+  description text not null default '',
+  status text not null default 'rascunho' check (status in ('rascunho', 'ativa', 'encerrada')),
+  identity_mode text not null default 'anonimo' check (identity_mode in ('anonimo', 'opcional', 'obrigatorio')),
+  one_response_per_email boolean not null default false,
+  starts_at timestamptz,
+  ends_at timestamptz,
+  thank_you_message text not null default '',
+  -- LGPD/GDPR: usados quando identity_mode != 'anonimo'. privacy_notice é
+  -- mostrado no ponto de coleta e vira snapshot em consent_text na resposta.
+  privacy_notice text not null default '',
+  privacy_policy_url text not null default '',
+  retention_days int,
+  created_by int references admin_users(id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists pesquisa_perguntas (
+  id uuid primary key default gen_random_uuid(),
+  pesquisa_id uuid not null references pesquisas(id) on delete cascade,
+  text text not null,
+  type text not null check (type in ('estrelas5', 'nota0a10', 'nota0a5', 'opcoes', 'texto')),
+  required boolean not null default false,
+  multi boolean not null default false,
+  min_label text not null default '',
+  max_label text not null default '',
+  position int not null default 0
+);
+
+create table if not exists pesquisa_opcoes (
+  id uuid primary key default gen_random_uuid(),
+  pergunta_id uuid not null references pesquisa_perguntas(id) on delete cascade,
+  text text not null,
+  position int not null default 0
+);
+
+-- Uma submissão da pesquisa inteira. Consentimento (LGPD/GDPR) guarda prova
+-- de accountability: se houve aceite e sobre qual texto exatamente (snapshot
+-- de privacy_notice no momento do envio). Sem IP nem user-agent (minimização).
+create table if not exists pesquisa_respostas (
+  id uuid primary key default gen_random_uuid(),
+  pesquisa_id uuid not null references pesquisas(id) on delete cascade,
+  respondent_name text not null default '',
+  respondent_email text not null default '',
+  submitted_at timestamptz not null default now(),
+  created_at timestamptz not null default now(),
+  consent_given boolean not null default false,
+  consent_text text not null default '',
+  consent_at timestamptz
+);
+
+-- Uma linha por pergunta respondida. option_ids + option_texts guardam
+-- snapshot do texto da opção escolhida, então o relatório sobrevive a
+-- edições/exclusões de opção feitas depois da resposta.
+create table if not exists pesquisa_resposta_itens (
+  id uuid primary key default gen_random_uuid(),
+  resposta_id uuid not null references pesquisa_respostas(id) on delete cascade,
+  pergunta_id uuid not null references pesquisa_perguntas(id) on delete cascade,
+  numeric_value numeric,
+  text_value text not null default '',
+  option_ids uuid[] not null default '{}',
+  option_texts text[] not null default '{}'
+);
+
+-- Pesquisas de satisfação (novo): dá ao perfil Gestor ("tudo, exceto perfis")
+-- sem duplicar se a migração já rodou.
+update access_profiles
+  set permissions = array_append(permissions, 'pesquisas:manage')
+  where name = 'Gestor' and not ('pesquisas:manage' = any(permissions));
+
 -- ---------- SEMENTES ----------
 
 insert into profile (id) values (1) on conflict (id) do nothing;

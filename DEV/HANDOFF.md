@@ -40,3 +40,9 @@ Admin: `microzapple@gmail.com` — senha definida localmente via
 - Encurtador (aba "Encurtador" no /admin/): já em produção (DNS, SSL e
   db:schema confirmados em 2026-07-23). Falta só um teste manual pelo
   navegador logado, ainda não feito.
+- Pesquisas de satisfação (aba "Pesquisas" no /admin/, público em
+  `/pesquisa/<id>`): implementado e verificado localmente em 2026-07-23
+  (curl + navegador, ver DEV/VERIFY.md). **Falta rodar `npm run db:schema`
+  em produção (Coolify → Terminal)** após o deploy — cria as 5 tabelas novas
+  e a migração `pesquisas:manage` no perfil Gestor. Envio de e-mail em massa
+  e QR code renderizado ficaram fora do escopo (ver plano original).

@@ -1,5 +1,54 @@
 # VERIFY
 
+## 2026-07-23 — Pesquisas de satisfação
+
+- `npm run db:schema` — rodado 2x seguidas, idempotente (cria as 5 tabelas +
+  migração `pesquisas:manage` no Gestor sem erro na segunda execução).
+- `npm run build` — ok, entrada `pesquisa` gerada em `dist/pesquisa/`.
+- API via curl (build de produção em :3001, sessão simulada via insert
+  direto em `sessions` do super admin):
+  - CRUD de pesquisa/pergunta (estrelas5, nota0a10, nota0a5, opções única,
+    texto) — 200/201 esperados.
+  - `GET /api/pesquisas/:id` (pública, anônima) — não expõe
+    `privacy_notice`/`privacy_policy_url`; `GET /api/pesquisas/public` lista
+    só a aberta.
+  - `POST /api/pesquisas/:id/responder`: obrigatória faltando → 400;
+    honeypot preenchido → 201 "fake" mas **não grava** (confirmado
+    `count(*)=1` no banco após 2 envios, um deles com honeypot); resposta
+    válida com todos os tipos → 201; nota fora do range (11 em 0–10) → 400.
+  - Relatório: média 5/9, NPS 100 (1 promotor), % por opção, distribuição —
+    conferido no JSON. CSV com BOM, uma linha por submissão, coluna por
+    pergunta.
+  - Trava estrutural: `PUT /admin/perguntas/:id` mudando tipo de pergunta
+    com resposta → 400; `DELETE` da mesma → 400; editar só o texto → 200
+    (permitido mesmo com resposta).
+  - Pesquisa `obrigatorio` + `one_response_per_email`: sem `consent_given` →
+    400; sem nome/e-mail → 400; resposta válida → 201, grava `consent_at`
+    (não nulo) e **sem** colunas de IP/user-agent na tabela (`\d
+    pesquisa_respostas` confirmado); reenvio com mesmo e-mail → 409.
+  - Pesquisa `rascunho` → `GET` público 404 "pesquisa indisponível".
+  - Direitos do titular: buscar respostas por e-mail (mesmo endpoint de
+    listagem com `?email=`) — ok; `DELETE /admin/respostas/:id` — 200;
+    `POST /admin/pesquisas/:id/expurgar` com `days=0` → 400, com `days=365`
+    → `{deleted:0}` (nada fora da retenção).
+- Navegador (`npm run dev`, login por OTP via console): seção "Pesquisas" no
+  menu; criar pesquisa com identificação obrigatória mostra os campos LGPD
+  (aviso de privacidade, link da política, retenção) só quando
+  `identity_mode != anonimo`; construtor de perguntas cria estrelas e opções
+  (editor de opções aparece só pro tipo certo); publicar (`status: ativa`) e
+  abrir `/pesquisa/<id>`: formulário renderiza os widgets certos (estrelas
+  clicáveis, radio de opções, campos nome/e-mail obrigatórios, checkbox de
+  consentimento não pré-marcado); enviar sem marcar consentimento é
+  bloqueado com a mensagem certa; após marcar e enviar, mostra a tela de
+  agradecimento e o reload preserva o estado "já respondido"
+  (`localStorage`); aba Relatório do admin reflete a resposta real (média,
+  barra de distribuição, tabela de respostas individuais).
+- Bug achado e corrigido nesta rodada (ver `DEV/WORKLOG.md`): ambiguidade de
+  `created_at` no `GET /admin/pesquisas` e falso "dirty" no botão Salvar do
+  editor de pergunta.
+- Dados de teste (pesquisas, perguntas, respostas, sessão simulada) removidos
+  do banco ao final.
+
 ## 2026-07-23 — Encurtador: editar URL + código customizado
 
 - `npm run build` — ok.

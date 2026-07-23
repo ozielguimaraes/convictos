@@ -10,6 +10,7 @@ export const AREAS = [
   { key: "acoes", label: "Ações entre amigos" },
   { key: "cardapio", label: "Cardápio" },
   { key: "encurtador", label: "Encurtador de links" },
+  { key: "pesquisas", label: "Pesquisas de satisfação" },
   { key: "usuarios", label: "Usuários" },
   { key: "perfis", label: "Perfis de acesso" },
 ];

@@ -10,6 +10,7 @@ import { cardapioRouter } from "./routes/cardapio.js";
 import { acoesRouter } from "./routes/acoes.js";
 import { accessProfilesRouter } from "./routes/accessProfiles.js";
 import { encurtadorRouter, resolveShortLink } from "./routes/encurtador.js";
+import { pesquisasRouter } from "./routes/pesquisas.js";
 
 // 404 com a identidade visual do site (cores do cardápio) em vez do "Cannot
 // GET" cru do Express. %HOME% é trocado pela home certa (raiz ou /cardapio/,
@@ -67,6 +68,7 @@ app.use("/api", acoesRouter);
 app.use("/api", accessProfilesRouter);
 app.use("/api", convictosRouter);
 app.use("/api", encurtadorRouter);
+app.use("/api", pesquisasRouter);
 
 // Subdomínio do encurtador: url.querc.app/<code> redireciona pra URL
 // configurada no admin. Roda antes do static/dist pois não serve nenhum
@@ -98,6 +100,10 @@ if (existsSync(dist)) {
     // URL RESTful do ranking: /rifa/<id> serve a página (o front lê o id do path).
     if (/^\/rifa\/[0-9a-f-]{36}\/?$/i.test(req.path)) {
       req.url = "/rifa/";
+    }
+    // URL RESTful da pesquisa: /pesquisa/<id> serve a página (o front lê o id do path).
+    if (/^\/pesquisa\/[0-9a-f-]{36}\/?$/i.test(req.path)) {
+      req.url = "/pesquisa/";
     }
     next();
   });

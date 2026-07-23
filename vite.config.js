@@ -6,11 +6,14 @@ export default defineConfig({
   plugins: [
     react(),
     {
-      // Mesmo rewrite do server/index.js: /rifa/<id> abre a página do ranking.
+      // Mesmo rewrite do server/index.js: /rifa/<id> abre a página do ranking
+      // e /pesquisa/<id> abre a página de resposta da pesquisa.
       name: "rifa-rest-path",
       configureServer(server) {
         server.middlewares.use((req, res, next) => {
-          if (/^\/rifa\/[0-9a-f-]{36}\/?$/i.test(req.url.split("?")[0])) req.url = "/rifa/";
+          const path = req.url.split("?")[0];
+          if (/^\/rifa\/[0-9a-f-]{36}\/?$/i.test(path)) req.url = "/rifa/";
+          if (/^\/pesquisa\/[0-9a-f-]{36}\/?$/i.test(path)) req.url = "/pesquisa/";
           next();
         });
       },
@@ -28,6 +31,7 @@ export default defineConfig({
         links: resolve(__dirname, "links/index.html"),
         avisos: resolve(__dirname, "avisos/index.html"),
         rifa: resolve(__dirname, "rifa/index.html"),
+        pesquisa: resolve(__dirname, "pesquisa/index.html"),
         admin: resolve(__dirname, "admin/index.html"),
         cardapio: resolve(__dirname, "cardapio/index.html"),
         cardapioAdmin: resolve(__dirname, "cardapio/admin/index.html"),

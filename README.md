@@ -73,6 +73,11 @@ Protected by authentication (password, OTP, or magic link):
 - **Menu Editor** (`/cardapio/admin/`) — add/edit/delete menu items
 - **Encurtador** — shorten a URL (auto-generated or custom code), edit the
   target URL later, get a `url.querc.app/<code>` link, track clicks
+- **Pesquisas** — build satisfaction surveys (stars, 0–10/0–5 scale, single/multi
+  choice, free text questions), publish a public link at `/pesquisa/<id>`,
+  track responses with a report (averages, NPS, option %, daily breakdown) and
+  CSV export. Identity mode (anonymous/optional/required) drives LGPD/GDPR
+  consent collection at the public form.
 
 ### Multi-Tenant Domain Routing
 - `convictos.querc.app`, `cardapio.querc.app` and `url.querc.app` point to the same backend
@@ -195,6 +200,18 @@ In dev mode (no SMTP), codes and links are **printed to console** for easy testi
 - `DELETE /api/admin/encurtador/:id` — delete a short link (admin)
 - `GET https://url.querc.app/<code>` — 302 redirect to the target URL, increments click count
 
+### Pesquisas (satisfaction surveys)
+- `GET /api/admin/pesquisas`, `POST /api/admin/pesquisas`, `PUT /api/admin/pesquisas/:id`, `DELETE /api/admin/pesquisas/:id` — survey CRUD (admin)
+- `GET /api/admin/pesquisas/:id` — detail with questions/options and `response_count`
+- `POST /api/admin/pesquisas/:id/perguntas`, `PUT /api/admin/perguntas/:id`, `DELETE /api/admin/perguntas/:id`, `PUT /api/admin/pesquisas/:id/perguntas/reorder` — question CRUD; once a survey has responses, question type/options and deletion are locked (title/description/status/dates/message stay editable) — duplicate the survey for a new version
+- `GET /api/admin/pesquisas/:id/report`, `GET /api/admin/pesquisas/:id/report.csv` — aggregated report (averages, NPS for 0–10 scales, option %, free-text list, daily responses) and CSV export
+- `GET /api/admin/pesquisas/:id/respostas?sort=&pergunta=&email=` — individual responses, sortable (date, name, or a chosen scale question's score) and searchable by respondent e-mail (LGPD data-subject access)
+- `DELETE /api/admin/respostas/:id` — delete a single response (LGPD right to erasure)
+- `POST /api/admin/pesquisas/:id/expurgar` — bulk-purge responses older than N days (retention)
+- `GET /api/pesquisas/public` — list currently open surveys (no auth)
+- `GET /api/pesquisas/:id` — public survey (only while `ativa` and inside its date window)
+- `POST /api/pesquisas/:id/responder` — submit a response; enforces required questions, identity/consent rules, one-response-per-e-mail, and a honeypot field against bots
+
 ### Health
 - `GET /api/health` — simple health check (returns `{ ok: true }`)
 
@@ -208,6 +225,7 @@ The `schema.sql` file defines:
 - `avisos` — announcements (title, content, created_at, active)
 - `cardapio_itens` — menu items (name, description, price, category, image)
 - `short_links` — URL shortener (code, target_url, click_count)
+- `pesquisas`, `pesquisa_perguntas`, `pesquisa_opcoes`, `pesquisa_respostas`, `pesquisa_resposta_itens` — satisfaction surveys (survey → questions → options, submissions → per-question items with option snapshots for report stability, plus LGPD consent proof on each response)
 - (and more)
 
 All tables are designed with proper indexes and constraints. Collation is `pt-BR` (Unicode, case-insensitive for Portuguese).

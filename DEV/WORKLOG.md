@@ -1,5 +1,45 @@
 # WORKLOG
 
+## 2026-07-23 — Módulo de Pesquisas de satisfação
+
+- Pedido do maestro: novo módulo completo — admin cria pesquisas (perguntas
+  de estrelas/nota 0–10/nota 0–5/opções única-múltipla/texto), publica link
+  público (`/pesquisa/<id>`) e acompanha respostas com relatório (médias,
+  NPS, % por opção, respostas por dia) + CSV. Seguiu os padrões existentes
+  (acoes.js/encurtador.js no back, AcoesSection/PatrocinadoresSection no
+  admin, rifa/ no público) — sem dependência nova.
+- Schema: `pesquisas`, `pesquisa_perguntas`, `pesquisa_opcoes`,
+  `pesquisa_respostas`, `pesquisa_resposta_itens` (uuid, cascade). Seed do
+  Gestor ganhou `pesquisas:manage`; área `pesquisas` no catálogo de permissões.
+- `server/routes/pesquisas.js`: CRUD admin de pesquisa/pergunta/opção com
+  **trava estrutural** (pesquisa com respostas bloqueia mudança de
+  tipo/opções e exclusão de pergunta — client-side oferece "Duplicar
+  pesquisa" como saída); relatório JSON + CSV; respostas individuais
+  ordenáveis (data/nome/nota, whitelist de `order by`); direitos do titular
+  (buscar por e-mail, excluir resposta, expurgo por retenção). Público: GET
+  pesquisa só quando `ativa` + dentro da janela de datas, `POST responder`
+  valida obrigatórias/identidade/consentimento/trava por e-mail/honeypot,
+  nunca grava IP/user-agent.
+- LGPD/GDPR: consentimento (checkbox não pré-marcado) só exigido quando
+  `identity_mode != anonimo`; grava snapshot do aviso aceito
+  (`consent_text`/`consent_at`) como prova de accountability.
+- Front: `PesquisasSection.jsx` (lista → detalhe com abas Editar/Relatório,
+  construtor de perguntas com reordenação) e app público
+  `pesquisa/` + `src/pesquisa/App.jsx` (widgets por tipo, tela de
+  agradecimento, trava de reenvio por `localStorage`).
+- Bug pego na verificação e corrigido: `PESQUISA_FIELDS` é um template
+  literal multilinha — `.split(", ")` não quebrava nas quebras de linha,
+  deixando `starts_at`/`created_at` sem o prefixo `p.` no `GET
+  /admin/pesquisas` e causando "column reference created_at is ambiguous"
+  (colide com `pesquisa_respostas.created_at` no join). Troquei para
+  `.split(/,\s*/)`. Também corrigido no `PerguntaEditor`: o estado local de
+  `options` inicializava com 2 placeholders vazios mesmo em perguntas que
+  não são "opções", deixando o botão "Salvar" sempre dirty sem motivo.
+- Verificado end-to-end (ver `DEV/VERIFY.md`) via curl (todas as regras) e no
+  navegador (fluxo completo: criar pesquisa identificada, publicar, checar
+  bloqueio de envio sem consentimento, responder, ver relatório com o dado
+  real). Dados de teste removidos do banco ao final.
+
 ## 2026-07-22 — Métrica por dia + exportação CSV do relatório de patrocinadores
 
 - Pedido do maestro: quebra diária das métricas, e poder gerar depois um
