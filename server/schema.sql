@@ -300,6 +300,11 @@ create table if not exists pesquisa_perguntas (
   position int not null default 0
 );
 
+-- Limite de caracteres (só usado pelo tipo "texto"). Migração para bancos
+-- criados antes destas colunas.
+alter table pesquisa_perguntas add column if not exists min_chars int;
+alter table pesquisa_perguntas add column if not exists max_chars int;
+
 create table if not exists pesquisa_opcoes (
   id uuid primary key default gen_random_uuid(),
   pergunta_id uuid not null references pesquisa_perguntas(id) on delete cascade,

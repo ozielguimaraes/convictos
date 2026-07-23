@@ -21,6 +21,20 @@ function isAnswered(pergunta, answer) {
   return answer.numeric_value !== undefined && answer.numeric_value !== null;
 }
 
+// Mensagem de erro específica por pergunta: obrigatória sem resposta, ou
+// texto fora do limite de caracteres configurado (só faz sentido checar o
+// limite quando já há algo digitado — vazio já cai na regra de obrigatória).
+function questionError(pergunta, answer) {
+  if (pergunta.required && !isAnswered(pergunta, answer)) return "Resposta obrigatória";
+  if (pergunta.type === "texto") {
+    const len = String(answer?.text_value || "").trim().length;
+    if (len === 0) return null;
+    if (pergunta.min_chars && len < pergunta.min_chars) return `Mínimo de ${pergunta.min_chars} caracteres`;
+    if (pergunta.max_chars && len > pergunta.max_chars) return `Máximo de ${pergunta.max_chars} caracteres`;
+  }
+  return null;
+}
+
 function StarsInput({ value, onChange }) {
   return (
     <div className="pq-stars">
@@ -69,18 +83,28 @@ function OptionsInput({ pergunta, value, onChange }) {
   );
 }
 
-function Question({ pergunta, answer, onAnswer, invalid }) {
+function Question({ pergunta, answer, onAnswer, error }) {
+  const textLen = String(answer?.text_value || "").length;
   return (
-    <div className={"pq-question" + (invalid ? " invalid" : "")}>
+    <div className={"pq-question" + (error ? " invalid" : "")}>
       <div className="pq-question-text">{pergunta.text}{pergunta.required && <span className="pq-required">*</span>}</div>
       {pergunta.type === "estrelas5" && <StarsInput value={answer?.numeric_value || 0} onChange={(n) => onAnswer({ numeric_value: n })} />}
       {pergunta.type === "nota0a10" && <ScaleInput max={10} value={answer?.numeric_value} onChange={(n) => onAnswer({ numeric_value: n })} minLabel={pergunta.min_label} maxLabel={pergunta.max_label} />}
       {pergunta.type === "nota0a5" && <ScaleInput max={5} value={answer?.numeric_value} onChange={(n) => onAnswer({ numeric_value: n })} minLabel={pergunta.min_label} maxLabel={pergunta.max_label} />}
       {pergunta.type === "opcoes" && <OptionsInput pergunta={pergunta} value={answer?.option_ids} onChange={(ids) => onAnswer({ option_ids: ids })} />}
       {pergunta.type === "texto" && (
-        <textarea className="pq-textarea" value={answer?.text_value || ""} onChange={(e) => onAnswer({ text_value: e.target.value })} placeholder="Escreva sua resposta…" />
+        <React.Fragment>
+          <textarea className="pq-textarea" value={answer?.text_value || ""} onChange={(e) => onAnswer({ text_value: e.target.value })}
+            placeholder="Escreva sua resposta…" maxLength={pergunta.max_chars || undefined} />
+          {(pergunta.min_chars || pergunta.max_chars) && (
+            <div className="pq-char-hint">
+              {textLen}{pergunta.max_chars ? ` / ${pergunta.max_chars}` : ""}
+              {pergunta.min_chars ? ` · mínimo ${pergunta.min_chars} caracteres` : ""}
+            </div>
+          )}
+        </React.Fragment>
       )}
-      {invalid && <div className="pq-field-err">Resposta obrigatória</div>}
+      {error && <div className="pq-field-err">{error}</div>}
     </div>
   );
 }
@@ -104,8 +128,8 @@ function Form({ pesquisa, onDone }) {
       ? EMAIL_RE.test(email.trim())
       : email.trim() === "" || EMAIL_RE.test(email.trim());
   const consentOk = pesquisa.identity_mode === "anonimo" || consent;
-  const missingQuestions = pesquisa.perguntas.filter((p) => p.required && !isAnswered(p, answers[p.id]));
-  const formOk = nameOk && emailOk && consentOk && missingQuestions.length === 0;
+  const questionsOk = pesquisa.perguntas.every((p) => !questionError(p, answers[p.id]));
+  const formOk = nameOk && emailOk && consentOk && questionsOk;
 
   const submit = async () => {
     setTouched(true);
@@ -137,7 +161,7 @@ function Form({ pesquisa, onDone }) {
       {pesquisa.perguntas.map((p) => (
         <Question key={p.id} pergunta={p} answer={answers[p.id]}
           onAnswer={(patch) => setAnswer(p.id, patch)}
-          invalid={touched && p.required && !isAnswered(p, answers[p.id])} />
+          error={touched ? questionError(p, answers[p.id]) : null} />
       ))}
 
       {pesquisa.identity_mode !== "anonimo" && (

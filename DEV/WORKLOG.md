@@ -1,5 +1,39 @@
 # WORKLOG
 
+## 2026-07-23 — Pesquisas: rótulo min/max só em nota + min/max de caracteres no texto livre
+
+- Pedido do maestro: consertar uma inconsistência que eu tinha deixado passar
+  (campos "Rótulo do mínimo/máximo" apareciam no admin pra pergunta de
+  estrelas, mas o público nunca mostra esse rótulo pra estrelas — só
+  `ScaleInput`, usado por nota0a10/nota0a5, renderiza). E incluir
+  mínimo/máximo de caracteres para a pergunta de texto livre.
+- Admin: novo `LABELED_SCALE_TYPES = ["nota0a10", "nota0a5"]` — os campos de
+  rótulo só aparecem pra esses dois tipos agora (estrelas5 continua usando o
+  `SCALE_TYPES` mais amplo só no relatório, onde faz sentido ter
+  média/distribuição pros 3 tipos de escala).
+- Schema: `pesquisa_perguntas.min_chars`/`max_chars` (int, nullable,
+  `alter table add column if not exists`). Só usados pelo tipo `texto`.
+- Backend: `perguntaInput` valida (inteiros ≥0/≥1, mínimo ≤ máximo) e
+  persiste; `POST /pesquisas/:id/responder` rejeita com 400 quando a
+  resposta de texto foge do intervalo; `GET /pesquisas/:id` (público) e o
+  admin expõem os dois campos.
+- Público (`src/pesquisa/App.jsx`): contador "X / max · mínimo N
+  caracteres" abaixo do textarea (atualiza ao digitar), `maxLength` no
+  textarea, e mensagem de erro específica por pergunta (obrigatória vs.
+  fora do limite) — refatorei `Question` pra receber uma mensagem de erro
+  em vez de um booleano `invalid`.
+- Bug pego na verificação e corrigido: no `PerguntaEditor`, o estado local
+  de `minChars`/`maxChars` inicializava como número (`pergunta.min_chars ??
+  ""`), mas o cálculo de "dirty" comparava com `String(...)` — number !==
+  string sempre, então o botão "Salvar" ficava permanentemente habilitado
+  mesmo sem alteração pra qualquer pergunta de texto com limite salvo (mesmo
+  padrão de bug já visto antes com as opções). Corrigido inicializando como
+  string.
+- Verificado no navegador: estrelas sem rótulos, nota com rótulos, texto
+  livre com os dois campos de caracteres; formulário público mostra o
+  contador, bloqueia envio abaixo do mínimo com a mensagem certa, aceita
+  dentro do intervalo. Dados de teste removidos do banco ao final.
+
 ## 2026-07-23 — Módulo de Pesquisas de satisfação
 
 - Pedido do maestro: novo módulo completo — admin cria pesquisas (perguntas

@@ -24,7 +24,7 @@ const SCALE_RANGES = { estrelas5: [1, 5], nota0a10: [0, 10], nota0a5: [0, 5] };
 const PESQUISA_FIELDS = `id, title, description, status, identity_mode, one_response_per_email,
   starts_at, ends_at, thank_you_message, privacy_notice, privacy_policy_url, retention_days,
   created_at, updated_at`;
-const PERGUNTA_FIELDS = "id, pesquisa_id, text, type, required, multi, min_label, max_label, position";
+const PERGUNTA_FIELDS = "id, pesquisa_id, text, type, required, multi, min_label, max_label, min_chars, max_chars, position";
 const OPCAO_FIELDS = "id, pergunta_id, text, position";
 
 // dias exibidos na quebra diária do relatório (padrão 30, teto 90) — mesmo critério do relatório de patrocinadores.
@@ -183,6 +183,13 @@ pesquisasRouter.get("/admin/pesquisas/:id", viewPesquisas, async (req, res, next
 
 // ---------- admin: perguntas ----------
 
+// null = sem limite; undefined = valor inválido (não é inteiro).
+function parseOptionalInt(v) {
+  if (v === null || v === undefined || v === "") return null;
+  const n = Number(v);
+  return Number.isInteger(n) ? n : undefined;
+}
+
 function perguntaInput(body) {
   const text = String(body.text || "").trim();
   const type = String(body.type || "");
@@ -196,9 +203,19 @@ function perguntaInput(body) {
       .map((o) => ({ id: UUID_RE.test(o?.id) ? o.id : null, text: String(o?.text || "").trim() }))
       .filter((o) => o.text);
     if (options.length < 2) return { error: "pergunta de opções precisa de ao menos 2 opções" };
-    return { text, type, required, multi: !!body.multi, min_label: "", max_label: "", options };
+    return { text, type, required, multi: !!body.multi, min_label: "", max_label: "", min_chars: null, max_chars: null, options };
   }
-  return { text, type, required, multi: false, min_label, max_label, options: [] };
+  if (type === "texto") {
+    const min_chars = parseOptionalInt(body.min_chars);
+    const max_chars = parseOptionalInt(body.max_chars);
+    if (min_chars === undefined || (min_chars !== null && min_chars < 0)) return { error: "mínimo de caracteres inválido" };
+    if (max_chars === undefined || (max_chars !== null && max_chars < 1)) return { error: "máximo de caracteres inválido" };
+    if (min_chars !== null && max_chars !== null && min_chars > max_chars) {
+      return { error: "mínimo de caracteres não pode ser maior que o máximo" };
+    }
+    return { text, type, required, multi: false, min_label: "", max_label: "", min_chars, max_chars, options: [] };
+  }
+  return { text, type, required, multi: false, min_label, max_label, min_chars: null, max_chars: null, options: [] };
 }
 
 async function replaceOptions(client, perguntaId, options) {
@@ -238,9 +255,10 @@ pesquisasRouter.post("/admin/pesquisas/:id/perguntas", managePesquisas, async (r
     const pos = await query("select coalesce(max(position) + 1, 0) as next from pesquisa_perguntas where pesquisa_id = $1", [req.params.id]);
     const pergunta = await withTransaction(async (client) => {
       const ins = await client.query(
-        `insert into pesquisa_perguntas (pesquisa_id, text, type, required, multi, min_label, max_label, position)
-         values ($1, $2, $3, $4, $5, $6, $7, $8) returning ${PERGUNTA_FIELDS}`,
-        [req.params.id, input.text, input.type, input.required, input.multi, input.min_label, input.max_label, pos.rows[0].next]
+        `insert into pesquisa_perguntas (pesquisa_id, text, type, required, multi, min_label, max_label, min_chars, max_chars, position)
+         values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) returning ${PERGUNTA_FIELDS}`,
+        [req.params.id, input.text, input.type, input.required, input.multi, input.min_label, input.max_label,
+          input.min_chars, input.max_chars, pos.rows[0].next]
       );
       const row = ins.rows[0];
       if (input.type === "opcoes") await replaceOptions(client, row.id, input.options);
@@ -271,9 +289,11 @@ pesquisasRouter.put("/admin/perguntas/:id", managePesquisas, async (req, res, ne
 
     await withTransaction(async (client) => {
       await client.query(
-        `update pesquisa_perguntas set text = $1, type = $2, required = $3, multi = $4, min_label = $5, max_label = $6
-         where id = $7`,
-        [input.text, input.type, input.required, input.multi, input.min_label, input.max_label, req.params.id]
+        `update pesquisa_perguntas set text = $1, type = $2, required = $3, multi = $4, min_label = $5, max_label = $6,
+           min_chars = $7, max_chars = $8
+         where id = $9`,
+        [input.text, input.type, input.required, input.multi, input.min_label, input.max_label,
+          input.min_chars, input.max_chars, req.params.id]
       );
       if (input.type === "opcoes") await replaceOptions(client, req.params.id, input.options);
       else await client.query("delete from pesquisa_opcoes where pergunta_id = $1", [req.params.id]);
@@ -569,7 +589,7 @@ pesquisasRouter.get("/pesquisas/:id", async (req, res, next) => {
     const pesquisa = await getOpenPesquisa(req.params.id);
     if (!pesquisa) return res.status(404).json({ error: "pesquisa indisponível" });
     const perguntas = await query(
-      "select id, text, type, required, multi, min_label, max_label, position from pesquisa_perguntas where pesquisa_id = $1 order by position",
+      "select id, text, type, required, multi, min_label, max_label, min_chars, max_chars, position from pesquisa_perguntas where pesquisa_id = $1 order by position",
       [pesquisa.id]
     );
     const opcoes = perguntas.rows.length
@@ -608,7 +628,7 @@ pesquisasRouter.post("/pesquisas/:id/responder", async (req, res, next) => {
     if (!pesquisa) return res.status(404).json({ error: "pesquisa indisponível" });
 
     const perguntas = await query(
-      "select id, type, required, multi from pesquisa_perguntas where pesquisa_id = $1",
+      "select id, type, required, multi, min_chars, max_chars from pesquisa_perguntas where pesquisa_id = $1",
       [pesquisa.id]
     );
     const opcoesByPergunta = new Map();
@@ -644,6 +664,12 @@ pesquisasRouter.post("/pesquisas/:id/responder", async (req, res, next) => {
         if (!text) {
           if (p.required) return res.status(400).json({ error: "há uma pergunta obrigatória sem resposta" });
           continue;
+        }
+        if (p.min_chars != null && text.length < p.min_chars) {
+          return res.status(400).json({ error: `resposta muito curta (mínimo de ${p.min_chars} caracteres)` });
+        }
+        if (p.max_chars != null && text.length > p.max_chars) {
+          return res.status(400).json({ error: `resposta muito longa (máximo de ${p.max_chars} caracteres)` });
         }
         items.push({ pergunta_id: p.id, numeric_value: null, text_value: text, option_ids: [], option_texts: [] });
       } else {

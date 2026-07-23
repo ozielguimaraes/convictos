@@ -14,6 +14,9 @@ const QUESTION_TYPES = [
   { value: "texto", label: "📝 Texto livre" },
 ];
 const SCALE_TYPES = ["estrelas5", "nota0a10", "nota0a5"];
+// Rótulo de mínimo/máximo só existe no widget de nota (0–10, 0–5) — o de
+// estrelas não os exibe no formulário público (ver src/pesquisa/App.jsx).
+const LABELED_SCALE_TYPES = ["nota0a10", "nota0a5"];
 const DAYS_OPTIONS = [7, 14, 30, 90];
 const SORT_OPTIONS = [
   { value: "data_desc", label: "Mais recentes primeiro" },
@@ -49,6 +52,8 @@ function PerguntaEditor({ pergunta, index, total, locked, canManage, onMove, onS
   const [multi, setMulti] = useState(pergunta.multi);
   const [minLabel, setMinLabel] = useState(pergunta.min_label);
   const [maxLabel, setMaxLabel] = useState(pergunta.max_label);
+  const [minChars, setMinChars] = useState(String(pergunta.min_chars ?? ""));
+  const [maxChars, setMaxChars] = useState(String(pergunta.max_chars ?? ""));
   const [options, setOptions] = useState(() => {
     if (pergunta.type !== "opcoes") return [];
     return pergunta.options.length ? pergunta.options.map((o) => ({ ...o })) : [{ text: "" }, { text: "" }];
@@ -62,13 +67,17 @@ function PerguntaEditor({ pergunta, index, total, locked, canManage, onMove, onS
 
   const dirty = text !== pergunta.text || type !== pergunta.type || required !== pergunta.required
     || multi !== pergunta.multi || minLabel !== pergunta.min_label || maxLabel !== pergunta.max_label
+    || minChars !== String(pergunta.min_chars ?? "") || maxChars !== String(pergunta.max_chars ?? "")
     || JSON.stringify(options.map((o) => o.text)) !== JSON.stringify(pergunta.options.map((o) => o.text));
 
   const save = async () => {
     setSaving(true);
     try {
       const saved = await api.put(`/api/admin/perguntas/${pergunta.id}`, {
-        text, type, required, multi, min_label: minLabel, max_label: maxLabel, options,
+        text, type, required, multi, min_label: minLabel, max_label: maxLabel,
+        min_chars: minChars === "" ? null : Number(minChars),
+        max_chars: maxChars === "" ? null : Number(maxChars),
+        options,
       });
       onSaved(saved);
       showToast("✓ Pergunta salva!");
@@ -119,7 +128,7 @@ function PerguntaEditor({ pergunta, index, total, locked, canManage, onMove, onS
           </button>
         )}
       </div>
-      {SCALE_TYPES.includes(type) && (
+      {LABELED_SCALE_TYPES.includes(type) && (
         <div className="acao-grid" style={{ marginTop: 10 }}>
           <div className="form-field">
             <label>Rótulo do mínimo (opcional)</label>
@@ -128,6 +137,20 @@ function PerguntaEditor({ pergunta, index, total, locked, canManage, onMove, onS
           <div className="form-field">
             <label>Rótulo do máximo (opcional)</label>
             <input type="text" value={maxLabel} onChange={(e) => setMaxLabel(e.target.value)} disabled={!canManage} />
+          </div>
+        </div>
+      )}
+      {type === "texto" && (
+        <div className="acao-grid" style={{ marginTop: 10 }}>
+          <div className="form-field">
+            <label>Mínimo de caracteres (opcional)</label>
+            <input type="text" inputMode="numeric" value={minChars}
+              onChange={(e) => setMinChars(e.target.value.replace(/\D/g, ""))} disabled={!canManage} />
+          </div>
+          <div className="form-field">
+            <label>Máximo de caracteres (opcional)</label>
+            <input type="text" inputMode="numeric" value={maxChars}
+              onChange={(e) => setMaxChars(e.target.value.replace(/\D/g, ""))} disabled={!canManage} />
           </div>
         </div>
       )}
@@ -163,6 +186,8 @@ function NewPerguntaForm({ pesquisaId, onAdded, showToast }) {
   const [multi, setMulti] = useState(false);
   const [minLabel, setMinLabel] = useState("");
   const [maxLabel, setMaxLabel] = useState("");
+  const [minChars, setMinChars] = useState("");
+  const [maxChars, setMaxChars] = useState("");
   const [options, setOptions] = useState([{ text: "" }, { text: "" }]);
   const [adding, setAdding] = useState(false);
 
@@ -175,11 +200,14 @@ function NewPerguntaForm({ pesquisaId, onAdded, showToast }) {
     setAdding(true);
     try {
       const created = await api.post(`/api/admin/pesquisas/${pesquisaId}/perguntas`, {
-        text: text.trim(), type, required, multi, min_label: minLabel, max_label: maxLabel, options,
+        text: text.trim(), type, required, multi, min_label: minLabel, max_label: maxLabel,
+        min_chars: minChars === "" ? null : Number(minChars),
+        max_chars: maxChars === "" ? null : Number(maxChars),
+        options,
       });
       onAdded(created);
       setText(""); setType("estrelas5"); setRequired(false); setMulti(false);
-      setMinLabel(""); setMaxLabel(""); setOptions([{ text: "" }, { text: "" }]);
+      setMinLabel(""); setMaxLabel(""); setMinChars(""); setMaxChars(""); setOptions([{ text: "" }, { text: "" }]);
       showToast("✓ Pergunta adicionada!");
     } catch (e) {
       showToast("Erro: " + e.message, true);
@@ -207,7 +235,7 @@ function NewPerguntaForm({ pesquisaId, onAdded, showToast }) {
           </button>
         )}
       </div>
-      {SCALE_TYPES.includes(type) && (
+      {LABELED_SCALE_TYPES.includes(type) && (
         <div className="acao-grid" style={{ marginTop: 10 }}>
           <div className="form-field">
             <label>Rótulo do mínimo (opcional)</label>
@@ -216,6 +244,18 @@ function NewPerguntaForm({ pesquisaId, onAdded, showToast }) {
           <div className="form-field">
             <label>Rótulo do máximo (opcional)</label>
             <input type="text" value={maxLabel} onChange={(e) => setMaxLabel(e.target.value)} />
+          </div>
+        </div>
+      )}
+      {type === "texto" && (
+        <div className="acao-grid" style={{ marginTop: 10 }}>
+          <div className="form-field">
+            <label>Mínimo de caracteres (opcional)</label>
+            <input type="text" inputMode="numeric" value={minChars} onChange={(e) => setMinChars(e.target.value.replace(/\D/g, ""))} />
+          </div>
+          <div className="form-field">
+            <label>Máximo de caracteres (opcional)</label>
+            <input type="text" inputMode="numeric" value={maxChars} onChange={(e) => setMaxChars(e.target.value.replace(/\D/g, ""))} />
           </div>
         </div>
       )}

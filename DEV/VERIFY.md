@@ -1,5 +1,25 @@
 # VERIFY
 
+## 2026-07-23 — Pesquisas: rótulo min/max só em nota + caracteres no texto livre
+
+- `npm run db:schema` 2x — idempotente, colunas `min_chars`/`max_chars`
+  confirmadas via `\d pesquisa_perguntas`.
+- `npm run build` — ok.
+- Backend via curl: `min_chars > max_chars` → 400; `max_chars: 0` → 400;
+  válido (5–20) → 201; `POST /responder` com texto de 3 chars (min 5) → 400
+  "resposta muito curta"; com 25 chars (max 20) → 400 "resposta muito
+  longa"; com 10 chars → 201. `GET /pesquisas/:id` público expõe
+  `min_chars`/`max_chars` por pergunta.
+- Navegador: construtor de pergunta mostra rótulos min/máx só para "Nota de
+  0 a 10"/"Nota de 0 a 5" (não aparece mais para "Estrelas"); mostra
+  "Mínimo/Máximo de caracteres" só para "Texto livre"; botão "Salvo ✓" fica
+  desabilitado corretamente após adicionar pergunta de texto com limites
+  (bug do falso "dirty" corrigido). No formulário público: contador "X / 50
+  · mínimo 10 caracteres" abaixo do textarea, atualiza ao digitar; enviar
+  com texto abaixo do mínimo é bloqueado com "Mínimo de 10 caracteres";
+  completar o texto e reenviar funciona (tela de agradecimento). Dados de
+  teste removidos do banco ao final.
+
 ## 2026-07-23 — Pesquisas de satisfação
 
 - `npm run db:schema` — rodado 2x seguidas, idempotente (cria as 5 tabelas +
