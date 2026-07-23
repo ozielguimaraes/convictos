@@ -248,3 +248,16 @@
   do container em produção para criar a tabela `short_links`. Sem isso, a
   aba Encurtador do /admin/ vai dar erro 500 ao criar/listar links em
   produção (localmente já testado e funcionando).
+
+## 2026-07-23 — Encurtador: editar URL + código customizado
+
+- `PUT /api/admin/encurtador/:id` — atualiza `target_url` mantendo o mesmo
+  código; aba Encurtador ganhou modo de edição por linha (Editar/Salvar/
+  Cancelar).
+- `POST /api/admin/encurtador` aceita `code` opcional no body (alfanumérico,
+  até 32 chars) pra escolher o alias em vez do gerado automático; 409 se já
+  estiver em uso. Campo "Código personalizado (opcional)" no formulário de
+  criação. Essa parte veio de uma tarefa em segundo plano que o maestro já
+  tinha disparado antes ("quero ter a opção de sugerir/tentar criar meu
+  link"); vi a mudança aparecer nos arquivos, confirmei com ele que era
+  legítima antes de seguir.

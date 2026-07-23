@@ -1,5 +1,17 @@
 # VERIFY
 
+## 2026-07-23 — Encurtador: editar URL + código customizado
+
+- `npm run build` — ok.
+- API via curl (build de produção em :3001, sessão simulada):
+  - PUT /api/admin/encurtador/:id com nova target_url → 200, código
+    permanece o mesmo; URL inválida → 400; id inexistente → 404.
+  - POST com `code: "promo"` → 201 com esse código exato; repetir o mesmo
+    código → 409; código com espaço → 400 (só alfanumérico); redirect
+    `Host: url.querc.app` `/promo` → 302 correto; sem `code` → continua
+    gerando automático (7 chars).
+- Dados de teste limpos, servidor local encerrado.
+
 ## 2026-07-22 — Encurtador de URLs (url.querc.app)
 
 - `npm run build` — ok. `npm run db:schema` — cria `short_links` e migra

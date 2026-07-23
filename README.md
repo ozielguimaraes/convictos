@@ -71,7 +71,8 @@ Protected by authentication (password, OTP, or magic link):
 - **Appearance** — theme, avatar, title
 - **Announcements** — manage bulletin board
 - **Menu Editor** (`/cardapio/admin/`) — add/edit/delete menu items
-- **Encurtador** — shorten a URL, get a `url.querc.app/<code>` link, track clicks
+- **Encurtador** — shorten a URL (auto-generated or custom code), edit the
+  target URL later, get a `url.querc.app/<code>` link, track clicks
 
 ### Multi-Tenant Domain Routing
 - `convictos.querc.app`, `cardapio.querc.app` and `url.querc.app` point to the same backend
@@ -189,7 +190,8 @@ In dev mode (no SMTP), codes and links are **printed to console** for easy testi
 
 ### Encurtador (URL shortener)
 - `GET /api/admin/encurtador` — list short links (admin)
-- `POST /api/admin/encurtador` — shorten a URL, returns the generated code (admin)
+- `POST /api/admin/encurtador` — shorten a URL; optional `code` picks a custom alias (409 if taken), otherwise one is auto-generated (admin)
+- `PUT /api/admin/encurtador/:id` — update the target URL, keeping the same code (admin)
 - `DELETE /api/admin/encurtador/:id` — delete a short link (admin)
 - `GET https://url.querc.app/<code>` — 302 redirect to the target URL, increments click count
 
