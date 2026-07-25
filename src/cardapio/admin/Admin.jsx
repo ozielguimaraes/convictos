@@ -5,8 +5,10 @@ import React, { useState, useEffect, useRef } from "react";
 import { api } from "../../lib/api.js";
 import Login from "../../components/Login.jsx";
 import MenuEditor from "./MenuEditor.jsx";
+import OrdersView from "./OrdersView.jsx";
 
 function Page({ canManage, onLogout }) {
+  const [tab, setTab] = useState("cardapio");
   const [toast, setToast] = useState({ msg: "", err: false });
   const toastTimer = useRef(null);
 
@@ -27,7 +29,13 @@ function Page({ canManage, onLogout }) {
 
       <div className="a-body">
         {!canManage && <div className="a-note">👁 Você tem acesso somente de visualização do cardápio.</div>}
-        <MenuEditor canManage={canManage} showToast={showToast} />
+        <div className="sp-tabs">
+          <button className={"sp-tab" + (tab === "cardapio" ? " active" : "")} onClick={() => setTab("cardapio")}>Cardápio</button>
+          <button className={"sp-tab" + (tab === "pedidos" ? " active" : "")} onClick={() => setTab("pedidos")}>📋 Pedidos</button>
+        </div>
+        {tab === "cardapio"
+          ? <MenuEditor canManage={canManage} showToast={showToast} />
+          : <OrdersView showToast={showToast} />}
       </div>
 
       <div className={"toast" + (toast.msg ? " show" : "") + (toast.err ? " err" : "")}>{toast.msg}</div>

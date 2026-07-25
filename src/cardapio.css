@@ -305,7 +305,12 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 .order-total { display: flex; justify-content: space-between; align-items: baseline; margin-top: 14px; padding-top: 14px; border-top: 2px dashed var(--cream-deep); }
 .order-total .l { font-family: var(--font-head); font-weight: 800; text-transform: uppercase; }
 .order-total .v { font-family: var(--font-head); font-weight: 800; font-size: 30px; color: var(--orange-2); white-space: nowrap; }
-.confirm-hint { text-align: center; padding: 18px 30px 8px; font-size: 14px; opacity: 0.85; font-weight: 600; }
+.confirm-warning {
+  margin: 16px 18px 0; padding: 14px 16px; border-radius: 16px;
+  background: var(--orange); color: #fff; font-size: 14px; font-weight: 600;
+  line-height: 1.4; text-align: center;
+}
+.confirm-warning strong { font-weight: 800; }
 .confirm-actions { margin-top: auto; padding: 16px 18px calc(20px + env(safe-area-inset-bottom)); }
 .btn-orange {
   width: 100%; background: var(--orange); color: #fff;

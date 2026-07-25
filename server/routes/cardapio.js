@@ -129,3 +129,65 @@ cardapioRouter.post("/orders", async (req, res, next) => {
     next(e);
   }
 });
+
+const ORDER_SORTS = {
+  numero_asc: "o.number asc",
+  numero_desc: "o.number desc",
+  data_asc: "o.created_at asc",
+  data_desc: "o.created_at desc",
+  valor_asc: "o.total asc",
+  valor_desc: "o.total desc",
+};
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+// Lista de pedidos para o admin: filtro opcional por dia (data local do
+// pedido) e ordenação por número, data ou valor.
+cardapioRouter.get("/orders", requirePermission("cardapio:view"), async (req, res, next) => {
+  try {
+    const orderBy = ORDER_SORTS[req.query.sort] || ORDER_SORTS.data_desc;
+    const params = [];
+    let where = "";
+    if (DATE_RE.test(String(req.query.data || ""))) {
+      params.push(req.query.data);
+      where = `where o.created_at::date = $${params.length}::date`;
+    }
+
+    const orders = await query(
+      `select o.id, o.number, o.customer_name, o.customer_email, o.customer_phone, o.total, o.status, o.created_at
+       from orders o ${where} order by ${orderBy}`,
+      params
+    );
+
+    const ids = orders.rows.map((o) => o.id);
+    const itemsByOrder = new Map(ids.map((id) => [id, []]));
+    if (ids.length) {
+      const items = await query(
+        `select order_id, name, unit_price, quantity, subtotal
+         from order_items where order_id = any($1::uuid[]) order by position`,
+        [ids]
+      );
+      for (const it of items.rows) itemsByOrder.get(it.order_id)?.push(it);
+    }
+
+    res.json({
+      pedidos: orders.rows.map((o) => ({
+        id: o.id,
+        numero: o.number,
+        nome: o.customer_name,
+        email: o.customer_email,
+        telefone: o.customer_phone,
+        total: Number(o.total),
+        status: o.status,
+        criadoEm: o.created_at,
+        itens: (itemsByOrder.get(o.id) || []).map((it) => ({
+          nome: it.name,
+          preco: Number(it.unit_price),
+          qty: it.quantity,
+          sub: Number(it.subtotal),
+        })),
+      })),
+    });
+  } catch (e) {
+    next(e);
+  }
+});

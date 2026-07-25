@@ -443,7 +443,9 @@ function ConfirmScreen({ data, onNew }) {
               <span className="v">{fmt(data.total)}</span>
             </div>
           </div>
-          <p className="confirm-hint">💳 O pagamento é feito no caixa</p>
+          <div className="confirm-warning">
+            ⚠️ <strong>Pague no caixa para receber seu ticket.</strong> Sem o ticket, seu pedido não é liberado na cozinha.
+          </div>
           <div className="confirm-actions">
             <button className="btn-orange" onClick={onNew}>Fazer novo pedido</button>
           </div>

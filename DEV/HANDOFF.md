@@ -36,7 +36,12 @@ Admin: `microzapple@gmail.com` — senha definida localmente via
 ## Próximos passos possíveis
 
 - Configurar SMTP real no `.env` (produção: variáveis SMTP_* no Coolify).
-- Tela de pedidos no admin do cardápio (pendência herdada do cardapio-on).
+- Tela de pedidos no admin do cardápio (pendência herdada do cardapio-on):
+  implementada e verificada localmente em 2026-07-25 (aba "Pedidos" em
+  `/cardapio/admin/` e na seção Cardápio de `/admin/`; endpoint
+  `GET /api/cardapio/orders`, filtro por dia + ordenação por número/data/valor,
+  protegido por `cardapio:view`). Não requer `db:schema` (tabelas `orders` e
+  `order_items` já existiam). Sem edição de status — só visualização.
 - Encurtador (aba "Encurtador" no /admin/): já em produção (DNS, SSL e
   db:schema confirmados em 2026-07-23). Falta só um teste manual pelo
   navegador logado, ainda não feito.

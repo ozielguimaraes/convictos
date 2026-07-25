@@ -1,5 +1,40 @@
 # WORKLOG
 
+## 2026-07-25 — Confirmação do pedido: aviso de pagamento no caixa
+
+- Pedido do maestro: ao finalizar o pedido, deixar bem claro que o
+  pagamento precisa ser feito no caixa pra receber o ticket.
+- `src/cardapio/customer/App.jsx` (`ConfirmScreen`): trocou o texto discreto
+  "💳 O pagamento é feito no caixa" (classe `.confirm-hint`, removida) por um
+  box laranja de destaque logo abaixo do cartão do pedido — "⚠️ Pague no
+  caixa para receber seu ticket. Sem o ticket, seu pedido não é liberado na
+  cozinha." (`.confirm-warning` em `src/cardapio.css`).
+- Verificado no navegador: fluxo completo de pedido (adicionar item →
+  carrinho → dados → gerar pedido) mostra o aviso de forma destacada na
+  tela de confirmação. Pedido de teste removido do banco ao final.
+
+## 2026-07-25 — Tela de pedidos no admin do cardápio
+
+- Pedido do maestro: tela no admin para ver os pedidos do dia, com filtro por
+  data e ordenação por número/data/valor — pendência antiga herdada do
+  cardapio-on (ver HANDOFF).
+- Backend: `GET /api/cardapio/orders` em `server/routes/cardapio.js`, atrás de
+  `requirePermission("cardapio:view")` (dados de cliente são PII). Filtro
+  opcional `?data=YYYY-MM-DD` (compara `created_at::date`); `?sort` num
+  whitelist fixo (`ORDER_SORTS`) pra evitar concatenar coluna/direção vindas
+  do cliente direto no SQL. Junta itens de `order_items` por pedido.
+- Frontend: `src/cardapio/admin/OrdersView.jsx` (novo), compartilhado entre
+  `/cardapio/admin/` (`Admin.jsx`) e a seção Cardápio do painel principal
+  (`src/admin/sections/CardapioSection.jsx`) — ambos ganharam abas
+  "Cardápio"/"📋 Pedidos" (`sp-tabs`, já existente, reaproveitado). Filtro de
+  data com padrão "hoje", botões "Hoje"/"Ver todos os dias", select de
+  ordenação e linha expansível pra ver os itens do pedido. Reaproveitado
+  `sp-report-table`/`pq-resp-filters` de Pesquisas; só duas classes novas em
+  `admin.css` (`.pd-row`, `.pd-detail-row`, `.pd-itens`).
+- Sem tela de edição de status — só visualização, como pedido.
+- Verificado localmente (curl + navegador, ver DEV/VERIFY.md). Não precisa de
+  `db:schema` em produção — `orders`/`order_items` já existiam no schema.
+
 ## 2026-07-23 — Pesquisas: rótulo min/max só em nota + min/max de caracteres no texto livre
 
 - Pedido do maestro: consertar uma inconsistência que eu tinha deixado passar

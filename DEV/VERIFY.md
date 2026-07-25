@@ -1,5 +1,31 @@
 # VERIFY
 
+## 2026-07-25 — Confirmação do pedido: aviso de pagamento no caixa
+
+- `npm run build` — ok.
+- Navegador (`npm run dev`): em `/cardapio/`, adicionado 1 item, aberto o
+  carrinho, preenchido nome/e-mail/telefone e clicado "Gerar pedido pro
+  caixa" — tela de confirmação mostra o box laranja "⚠️ Pague no caixa para
+  receber seu ticket..." logo abaixo do cartão do pedido, bem visível.
+  Pedido de teste removido do banco ao final.
+
+## 2026-07-25 — Tela de pedidos no admin do cardápio
+
+- `npm run build` — ok.
+- Backend via curl (dev, `npm run dev:api` + container `postgres-latest`):
+  login por OTP (`send-code`/`verify-code`) para pegar sessão; `POST
+  /api/cardapio/orders` (público) cria 2 pedidos de teste; `GET
+  /api/cardapio/orders` sem sessão → 401; com sessão — filtro `?data=YYYY-MM-DD`
+  do dia certo retorna os 2, data sem pedido retorna `[]`; `sort=valor_desc`,
+  `valor_asc`, `numero_asc` ordenam certo (conferido a lista de
+  número/total). Dados de teste removidos do banco ao final (`delete from
+  orders where customer_name in ('Teste A','Teste B')`).
+- Navegador (`npm run dev`, sessão já ativa): aba "📋 Pedidos" aparece ao
+  lado de "Cardápio" tanto na seção Cardápio de `/admin/` quanto em
+  `/cardapio/admin/`; filtro de data (padrão hoje), botões "Hoje"/"Ver
+  todos os dias", troca de ordenação (select) e expandir linha para ver
+  itens do pedido — todos testados e funcionando.
+
 ## 2026-07-23 — Pesquisas: rótulo min/max só em nota + caracteres no texto livre
 
 - `npm run db:schema` 2x — idempotente, colunas `min_chars`/`max_chars`
