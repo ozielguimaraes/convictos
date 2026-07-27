@@ -14,6 +14,7 @@ export default defineConfig({
           const path = req.url.split("?")[0];
           if (/^\/rifa\/[0-9a-f-]{36}\/?$/i.test(path)) req.url = "/rifa/";
           if (/^\/pesquisa\/[0-9a-f-]{36}\/?$/i.test(path)) req.url = "/pesquisa/";
+          if (/^\/vendas\/.*\/?$/i.test(path)) req.url = "/vendas/";
           next();
         });
       },
@@ -35,6 +36,7 @@ export default defineConfig({
         admin: resolve(__dirname, "admin/index.html"),
         cardapio: resolve(__dirname, "cardapio/index.html"),
         cardapioAdmin: resolve(__dirname, "cardapio/admin/index.html"),
+        vendas: resolve(__dirname, "vendas/index.html"),
       },
     },
   },

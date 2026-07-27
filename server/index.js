@@ -107,6 +107,10 @@ if (existsSync(dist)) {
     if (/^\/pesquisa\/[0-9a-f-]{36}\/?$/i.test(req.path)) {
       req.url = "/pesquisa/";
     }
+    // Vendas de eventos: /vendas/<slug> serve a página (o front busca os dados via API).
+    if (/^\/vendas\/.*\/?$/i.test(req.path)) {
+      req.url = "/vendas/";
+    }
     next();
   });
   app.use(express.static(dist));
