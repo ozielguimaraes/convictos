@@ -11,6 +11,7 @@ import { acoesRouter } from "./routes/acoes.js";
 import { accessProfilesRouter } from "./routes/accessProfiles.js";
 import { encurtadorRouter, resolveShortLink } from "./routes/encurtador.js";
 import { pesquisasRouter } from "./routes/pesquisas.js";
+import vendasRouter from "./routes/vendas.js";
 
 // 404 com a identidade visual do site (cores do cardápio) em vez do "Cannot
 // GET" cru do Express. %HOME% é trocado pela home certa (raiz ou /cardapio/,
@@ -69,6 +70,7 @@ app.use("/api", accessProfilesRouter);
 app.use("/api", convictosRouter);
 app.use("/api", encurtadorRouter);
 app.use("/api", pesquisasRouter);
+app.use("/api/vendas", vendasRouter);
 
 // Subdomínio do encurtador: url.querc.app/<code> redireciona pra URL
 // configurada no admin. Roda antes do static/dist pois não serve nenhum

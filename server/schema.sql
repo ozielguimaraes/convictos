@@ -421,3 +421,45 @@ begin
     insert into schema_marks (name) values ('links-page-seed-link');
   end if;
 end $$;
+
+-- ---------- VENDAS DE EVENTOS ----------
+
+create table if not exists eventos (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  description text not null default '',
+  start_date date not null,
+  end_date date not null,
+  location text not null default '',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists vendas_evento (
+  id uuid primary key default gen_random_uuid(),
+  evento_id uuid not null references eventos(id) on delete cascade,
+  product_code text not null,
+  product_name text not null,
+  data_venda date not null,
+  quantidade integer not null default 0,
+  valor_total numeric not null default 0,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists idx_vendas_evento_evento_id on vendas_evento(evento_id);
+create index if not exists idx_vendas_evento_data on vendas_evento(data_venda);
+create index if not exists idx_vendas_evento_product on vendas_evento(product_code);
+
+-- Sementes de eventos: Congresso 2026
+do $$
+declare evento_id uuid;
+begin
+  if not exists (select 1 from schema_marks where name = 'evento-congresso-2026') then
+    insert into eventos (name, description, start_date, end_date, location)
+      values ('Congresso 2026', 'Vendas do Congresso 2026 (23-26 de julho)', '2026-07-23', '2026-07-26', '')
+      returning id into evento_id;
+
+    insert into schema_marks (name) values ('evento-congresso-2026');
+  end if;
+end $$;
