@@ -50,7 +50,7 @@ const vendas = [
   { produto: 'Suco 200ml', codigo: '20', data: '2026-07-23', qty: 33, valor: 115.50 },
   { produto: 'Camiseta Infant', codigo: '7', data: '2026-07-23', qty: 3, valor: 114.00 },
   { produto: 'Trident', codigo: '8', data: '2026-07-23', qty: 34, valor: 102.00 },
-  { produto: 'Água COM gás', codigo: '22', data: '2026-07-23', qty: 28, valor: 84.00 },
+  { produto: 'Água COM gás', codigo: '39', data: '2026-07-23', qty: 28, valor: 84.00 },
   { produto: 'Bala', codigo: '25', data: '2026-07-23', qty: 26, valor: 5.20 },
   { produto: 'Kit kat', codigo: '28', data: '2026-07-23', qty: 19, valor: 85.50 },
   { produto: 'Mentos', codigo: '30', data: '2026-07-23', qty: 17, valor: 59.50 },
