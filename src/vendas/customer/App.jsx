@@ -80,8 +80,8 @@ export default function VendasCongresso2026() {
   })
 
   const totalGeral = produtosFiltrados.reduce((sum, v) => sum + v.total, 0)
-  const totalFaturamento = produtosFiltrados.reduce((sum, v) => sum + (v.faturamento || 0), 0)
-  const totalCusto = produtosFiltrados.reduce((sum, v) => sum + (v.custo_total || 0), 0)
+  const totalFaturamento = produtosFiltrados.reduce((sum, v) => sum + parseFloat(v.faturamento || 0), 0)
+  const totalCusto = produtosFiltrados.reduce((sum, v) => sum + parseFloat(v.custo_total || 0), 0)
   const totalLucro = totalFaturamento - totalCusto
 
   if (loading) {
@@ -216,8 +216,10 @@ export default function VendasCongresso2026() {
           <tbody>
             {produtosOrdenados.length > 0 ? (
               produtosOrdenados.map((venda, idx) => {
-                const margem = venda.venda > 0 ? ((venda.venda - venda.custo) / venda.venda * 100).toFixed(1) : 0
-                const lucro = (venda.faturamento || 0) - (venda.custo_total || 0)
+                const custoUnit = parseFloat(venda.custo) || 0
+                const vendaUnit = parseFloat(venda.venda) || 0
+                const margem = vendaUnit > 0 ? ((vendaUnit - custoUnit) / vendaUnit * 100).toFixed(1) : 0
+                const lucro = parseFloat(venda.faturamento || 0) - parseFloat(venda.custo_total || 0)
                 return (
                   <tr key={idx} className={idx % 2 === 0 ? 'par' : 'impar'}>
                     <td className="produto-nome">{venda.name}</td>
@@ -227,8 +229,8 @@ export default function VendasCongresso2026() {
                     <td className="numero">{formatNumber(venda['25_07'] || 0)}</td>
                     <td className="numero">{formatNumber(venda['26_07'] || 0)}</td>
                     <td className="numero total-col"><strong>{formatNumber(venda.total)}</strong></td>
-                    <td className="preco">R$ {(venda.custo || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
-                    <td className="preco">R$ {(venda.venda || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
+                    <td className="preco">R$ {custoUnit.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
+                    <td className="preco">R$ {vendaUnit.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
                     <td className="preco">{margem}%</td>
                     <td className="preco lucro-col"><strong>R$ {lucro.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</strong></td>
                   </tr>
