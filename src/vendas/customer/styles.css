@@ -111,6 +111,56 @@
   color: #ff9800;
 }
 
+.resumo-qty {
+  font-size: 0.85em;
+  color: #999;
+  margin-bottom: 6px;
+}
+
+.resumo-preco {
+  font-size: 1.3em;
+  font-weight: 700;
+  color: #2196F3;
+}
+
+.resumo-fin-card {
+  background: white;
+  padding: 16px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  text-align: center;
+  border-left: 4px solid #2196F3;
+}
+
+.resumo-financeiro {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 15px;
+  margin-bottom: 30px;
+}
+
+.resumo-fin-label {
+  font-size: 0.85em;
+  color: #666;
+  text-transform: uppercase;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.resumo-fin-valor {
+  font-size: 1.8em;
+  font-weight: 700;
+  color: #2196F3;
+}
+
+.resumo-fin-lucro {
+  border-left-color: #4caf50;
+}
+
+.resumo-fin-lucro .resumo-fin-valor {
+  color: #4caf50;
+}
+
 .tabela-container {
   background: white;
   border-radius: 8px;
@@ -183,6 +233,25 @@
   font-size: 0.9em;
   color: #666;
   font-weight: 500;
+}
+
+.tabela-vendas th.preco {
+  text-align: right;
+  padding-right: 12px;
+  font-size: 0.85em;
+}
+
+.tabela-vendas td.preco {
+  text-align: right;
+  font-size: 0.85em;
+  color: #555;
+  padding-right: 12px;
+}
+
+.tabela-vendas td.preco.lucro-col {
+  font-weight: 700;
+  color: #4caf50;
+  background-color: #f1f8f5;
 }
 
 .tabela-vendas tbody tr:hover {
@@ -300,12 +369,30 @@
     font-size: 0.8em;
   }
 
+  .resumo-qty {
+    font-size: 0.7em;
+  }
+
+  .resumo-preco {
+    font-size: 1.1em;
+  }
+
+  .resumo-financeiro {
+    grid-template-columns: 1fr;
+  }
+
   .tabela-container {
     margin-bottom: 20px;
   }
 
   .tabela-vendas {
-    font-size: 0.85em;
+    font-size: 0.75em;
+  }
+
+  .tabela-vendas th.preco,
+  .tabela-vendas td.preco {
+    padding-right: 6px;
+    font-size: 0.7em;
   }
 
   .tabela-vendas th {
@@ -424,9 +511,15 @@
     font-size: 0.7em;
   }
 
+  .tabela-vendas th.preco,
+  .tabela-vendas td.preco {
+    padding-right: 2px;
+    font-size: 0.6em;
+  }
+
   .tabela-vendas td.produto-nome {
-    min-width: 100px;
-    font-size: 0.85em;
+    min-width: 80px;
+    font-size: 0.75em;
   }
 
   .sem-dados {
@@ -441,6 +534,19 @@
 
   .rodape p {
     margin: 8px 0;
+  }
+
+  .resumo-financeiro {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .resumo-fin-card {
+    padding: 12px;
+  }
+
+  .resumo-fin-valor {
+    font-size: 1.3em;
   }
 }
 
@@ -482,8 +588,23 @@
     font-size: 0.6em;
   }
 
+  .tabela-vendas th.preco,
+  .tabela-vendas td.preco {
+    padding: 4px 1px;
+    font-size: 0.5em;
+  }
+
   .tabela-vendas td.produto-nome {
-    min-width: 80px;
+    min-width: 70px;
+    font-size: 0.65em;
+  }
+
+  .resumo-fin-card {
+    padding: 10px;
+  }
+
+  .resumo-fin-valor {
+    font-size: 1.1em;
   }
 
   .rodape {

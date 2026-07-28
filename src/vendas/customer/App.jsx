@@ -64,20 +64,25 @@ export default function VendasCongresso2026() {
 
   // Calcular totais por dia
   const totalPorDia = {
-    '23_07': 0,
-    '24_07': 0,
-    '25_07': 0,
-    '26_07': 0
+    '23_07': { qty: 0, faturamento: 0, custo: 0 },
+    '24_07': { qty: 0, faturamento: 0, custo: 0 },
+    '25_07': { qty: 0, faturamento: 0, custo: 0 },
+    '26_07': { qty: 0, faturamento: 0, custo: 0 }
   }
 
   produtosFiltrados.forEach(v => {
-    totalPorDia['23_07'] += v['23_07'] || 0
-    totalPorDia['24_07'] += v['24_07'] || 0
-    totalPorDia['25_07'] += v['25_07'] || 0
-    totalPorDia['26_07'] += v['26_07'] || 0
+    ['23_07', '24_07', '25_07', '26_07'].forEach(dia => {
+      const qty = v[dia] || 0
+      totalPorDia[dia].qty += qty
+      totalPorDia[dia].faturamento += qty * (v.venda || 0)
+      totalPorDia[dia].custo += qty * (v.custo || 0)
+    })
   })
 
   const totalGeral = produtosFiltrados.reduce((sum, v) => sum + v.total, 0)
+  const totalFaturamento = produtosFiltrados.reduce((sum, v) => sum + (v.faturamento || 0), 0)
+  const totalCusto = produtosFiltrados.reduce((sum, v) => sum + (v.custo_total || 0), 0)
+  const totalLucro = totalFaturamento - totalCusto
 
   if (loading) {
     return (
@@ -151,23 +156,43 @@ export default function VendasCongresso2026() {
       <div className="resumo">
         <div className="resumo-card">
           <div className="resumo-label">23/07</div>
-          <div className="resumo-valor">{totalPorDia['23_07'].toLocaleString('pt-BR')}</div>
+          <div className="resumo-qty">{totalPorDia['23_07'].qty.toLocaleString('pt-BR')} un</div>
+          <div className="resumo-preco">R$ {totalPorDia['23_07'].faturamento.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
         </div>
         <div className="resumo-card">
           <div className="resumo-label">24/07</div>
-          <div className="resumo-valor">{totalPorDia['24_07'].toLocaleString('pt-BR')}</div>
+          <div className="resumo-qty">{totalPorDia['24_07'].qty.toLocaleString('pt-BR')} un</div>
+          <div className="resumo-preco">R$ {totalPorDia['24_07'].faturamento.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
         </div>
         <div className="resumo-card">
           <div className="resumo-label">25/07</div>
-          <div className="resumo-valor">{totalPorDia['25_07'].toLocaleString('pt-BR')}</div>
+          <div className="resumo-qty">{totalPorDia['25_07'].qty.toLocaleString('pt-BR')} un</div>
+          <div className="resumo-preco">R$ {totalPorDia['25_07'].faturamento.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
         </div>
         <div className="resumo-card">
           <div className="resumo-label">26/07</div>
-          <div className="resumo-valor">{totalPorDia['26_07'].toLocaleString('pt-BR')}</div>
+          <div className="resumo-qty">{totalPorDia['26_07'].qty.toLocaleString('pt-BR')} un</div>
+          <div className="resumo-preco">R$ {totalPorDia['26_07'].faturamento.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
         </div>
         <div className="resumo-card resumo-total">
-          <div className="resumo-label">TOTAL</div>
-          <div className="resumo-valor">{totalGeral.toLocaleString('pt-BR')}</div>
+          <div className="resumo-label">TOTAL GERAL</div>
+          <div className="resumo-qty">{totalGeral.toLocaleString('pt-BR')} un</div>
+          <div className="resumo-preco">R$ {totalFaturamento.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+        </div>
+      </div>
+
+      <div className="resumo-financeiro">
+        <div className="resumo-fin-card">
+          <div className="resumo-fin-label">Faturamento Total</div>
+          <div className="resumo-fin-valor">R$ {totalFaturamento.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+        </div>
+        <div className="resumo-fin-card">
+          <div className="resumo-fin-label">Custo Total</div>
+          <div className="resumo-fin-valor">R$ {totalCusto.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+        </div>
+        <div className="resumo-fin-card resumo-fin-lucro">
+          <div className="resumo-fin-label">Lucro</div>
+          <div className="resumo-fin-valor">R$ {totalLucro.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
         </div>
       </div>
 
@@ -182,24 +207,36 @@ export default function VendasCongresso2026() {
               <th className="numero">25/07</th>
               <th className="numero">26/07</th>
               <th className="numero total-col">TOTAL</th>
+              <th className="preco">Custo Unit.</th>
+              <th className="preco">Venda Unit.</th>
+              <th className="preco">Margem %</th>
+              <th className="preco lucro-col">Lucro</th>
             </tr>
           </thead>
           <tbody>
             {produtosOrdenados.length > 0 ? (
-              produtosOrdenados.map((venda, idx) => (
-                <tr key={idx} className={idx % 2 === 0 ? 'par' : 'impar'}>
-                  <td className="produto-nome">{venda.name}</td>
-                  <td className="fornecedor-cell">{venda.supplier || '-'}</td>
-                  <td className="numero">{formatNumber(venda['23_07'] || 0)}</td>
-                  <td className="numero">{formatNumber(venda['24_07'] || 0)}</td>
-                  <td className="numero">{formatNumber(venda['25_07'] || 0)}</td>
-                  <td className="numero">{formatNumber(venda['26_07'] || 0)}</td>
-                  <td className="numero total-col"><strong>{formatNumber(venda.total)}</strong></td>
-                </tr>
-              ))
+              produtosOrdenados.map((venda, idx) => {
+                const margem = venda.venda > 0 ? ((venda.venda - venda.custo) / venda.venda * 100).toFixed(1) : 0
+                const lucro = (venda.faturamento || 0) - (venda.custo_total || 0)
+                return (
+                  <tr key={idx} className={idx % 2 === 0 ? 'par' : 'impar'}>
+                    <td className="produto-nome">{venda.name}</td>
+                    <td className="fornecedor-cell">{venda.supplier || '-'}</td>
+                    <td className="numero">{formatNumber(venda['23_07'] || 0)}</td>
+                    <td className="numero">{formatNumber(venda['24_07'] || 0)}</td>
+                    <td className="numero">{formatNumber(venda['25_07'] || 0)}</td>
+                    <td className="numero">{formatNumber(venda['26_07'] || 0)}</td>
+                    <td className="numero total-col"><strong>{formatNumber(venda.total)}</strong></td>
+                    <td className="preco">R$ {(venda.custo || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
+                    <td className="preco">R$ {(venda.venda || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
+                    <td className="preco">{margem}%</td>
+                    <td className="preco lucro-col"><strong>R$ {lucro.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</strong></td>
+                  </tr>
+                )
+              })
             ) : (
               <tr>
-                <td colSpan="7" className="sem-dados">Nenhum produto encontrado</td>
+                <td colSpan="11" className="sem-dados">Nenhum produto encontrado</td>
               </tr>
             )}
           </tbody>

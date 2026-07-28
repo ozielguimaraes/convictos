@@ -441,6 +441,8 @@ create table if not exists vendas_evento (
   product_code text not null,
   product_name text not null,
   supplier_name text not null default '',
+  preco_custo numeric(10, 2) not null default 0,
+  preco_venda numeric(10, 2) not null default 0,
   data_venda date not null,
   quantidade integer not null default 0,
   valor_total numeric not null default 0,
@@ -449,6 +451,8 @@ create table if not exists vendas_evento (
 );
 
 alter table vendas_evento add column if not exists supplier_name text not null default '';
+alter table vendas_evento add column if not exists preco_custo numeric(10, 2) not null default 0;
+alter table vendas_evento add column if not exists preco_venda numeric(10, 2) not null default 0;
 
 create index if not exists idx_vendas_evento_evento_id on vendas_evento(evento_id);
 create index if not exists idx_vendas_evento_data on vendas_evento(data_venda);

@@ -1,41 +1,41 @@
 import { query as dbQuery } from '../db.js'
 
-// Mapeamento produto -> fornecedor (baseado na planilha de controle)
-const suppliers = {
-  'Camiseta Adulto': 'Convictos',
-  'Coxinha': 'Elda',
-  'Batata chips': 'Paulinho',
-  'Coca cola 2L': 'Convictos',
-  'Refrigerante 20L': 'Convictos',
-  'Mineiro 2L': 'Convictos',
-  'Água sem gás': 'Convictos',
-  'Suco 200ml': 'Convictos',
-  'Camiseta Infant': 'Convictos',
-  'Trident': 'Magno',
-  'Água COM gás': 'Convictos',
-  'Bala': 'Magno',
-  'Kit kat': 'Magno',
-  'Mentos': 'Magno',
-  'nutella B-ready': 'Magno',
-  'Salsichão': 'Elda',
-  'Halls': 'Magno',
-  'Fruit-tella': 'Magno',
-  'Trento': 'Magno',
-  'Prestígio': 'Magno',
-  'Combo Hambúrg': 'Paulinho',
-  'Pastel': 'Paulinho',
-  'Espetinho': 'Paulinho',
-  'Churros': 'Raniel',
-  'Botton': 'Convictos',
-  'Batata frita': 'Paulinho',
-  'Amarena': 'Amarena',
-  'Sorvete Amarena': 'Amarena',
-  'Macarrão': 'Paulinho',
-  'Caldo 500ml': 'Elda',
-  'Pão com pernil': 'Paulinho',
-  'Cachorro quente': 'Paulinho',
-  'Caldo 250ml': 'Elda',
-  'Camiseta promo': 'Convictos'
+// Mapeamento produto -> fornecedor, custo e venda (baseado na planilha de controle)
+const products = {
+  'Camiseta Adulto': { supplier: 'Convictos', custo: 21.00, venda: 38.00 },
+  'Coxinha': { supplier: 'Elda', custo: 5.50, venda: 9.00 },
+  'Batata chips': { supplier: 'Paulinho', custo: 8.00, venda: 10.00 },
+  'Coca cola 2L': { supplier: 'Convictos', custo: 9.17, venda: 11.00 },
+  'Refrigerante 20L': { supplier: 'Convictos', custo: 1.48, venda: 3.00 },
+  'Mineiro 2L': { supplier: 'Convictos', custo: 6.70, venda: 8.50 },
+  'Água sem gás': { supplier: 'Convictos', custo: 1.59, venda: 2.50 },
+  'Suco 200ml': { supplier: 'Convictos', custo: 1.99, venda: 3.50 },
+  'Camiseta Infant': { supplier: 'Convictos', custo: 32.00, venda: 55.00 },
+  'Trident': { supplier: 'Magno', custo: 1.85, venda: 3.00 },
+  'Água COM gás': { supplier: 'Convictos', custo: 1.89, venda: 3.00 },
+  'Bala': { supplier: 'Magno', custo: 0.09, venda: 0.20 },
+  'Kit kat': { supplier: 'Magno', custo: 3.29, venda: 4.50 },
+  'Mentos': { supplier: 'Magno', custo: 2.06, venda: 3.50 },
+  'nutella B-ready': { supplier: 'Magno', custo: 3.49, venda: 5.00 },
+  'Salsichão': { supplier: 'Elda', custo: 5.50, venda: 9.00 },
+  'Halls': { supplier: 'Magno', custo: 2.20, venda: 2.50 },
+  'Fruit-tella': { supplier: 'Magno', custo: 2.19, venda: 3.50 },
+  'Trento': { supplier: 'Magno', custo: 1.93, venda: 3.50 },
+  'Prestígio': { supplier: 'Magno', custo: 2.63, venda: 4.00 },
+  'Combo Hambúrg': { supplier: 'Paulinho', custo: 17.00, venda: 19.90 },
+  'Pastel': { supplier: 'Paulinho', custo: 15.00, venda: 18.00 },
+  'Espetinho': { supplier: 'Paulinho', custo: 10.00, venda: 12.00 },
+  'Churros': { supplier: 'Raniel', custo: 10.00, venda: 13.00 },
+  'Botton': { supplier: 'Convictos', custo: 4.00, venda: 7.00 },
+  'Batata frita': { supplier: 'Paulinho', custo: 13.50, venda: 16.00 },
+  'Amarena': { supplier: 'Amarena', custo: 1.00, venda: 4.50 },
+  'Sorvete Amarena': { supplier: 'Amarena', custo: 1.00, venda: 4.50 },
+  'Macarrão': { supplier: 'Paulinho', custo: 16.00, venda: 21.00 },
+  'Caldo 500ml': { supplier: 'Elda', custo: 11.00, venda: 16.00 },
+  'Pão com pernil': { supplier: 'Paulinho', custo: 20.00, venda: 25.00 },
+  'Cachorro quente': { supplier: 'Paulinho', custo: 12.50, venda: 16.50 },
+  'Caldo 250ml': { supplier: 'Elda', custo: 5.00, venda: 8.00 },
+  'Camiseta promo': { supplier: 'Convictos', custo: 21.00, venda: 38.00 }
 }
 
 const vendas = [
@@ -158,11 +158,11 @@ async function seedVendas() {
 
     let inserted = 0
     for (const v of vendas) {
-      const supplier = suppliers[v.produto] || 'Sem fornecedor'
+      const prodInfo = products[v.produto] || { supplier: 'Sem fornecedor', custo: 0, venda: 0 }
       await dbQuery(
-        `INSERT INTO vendas_evento (evento_id, product_code, product_name, supplier_name, data_venda, quantidade, valor_total)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-        [eventoId, v.codigo, v.produto, supplier, v.data, v.qty, v.valor]
+        `INSERT INTO vendas_evento (evento_id, product_code, product_name, supplier_name, preco_custo, preco_venda, data_venda, quantidade, valor_total)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+        [eventoId, v.codigo, v.produto, prodInfo.supplier, prodInfo.custo, prodInfo.venda, v.data, v.qty, v.valor]
       )
       inserted++
     }
