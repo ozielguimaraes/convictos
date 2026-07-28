@@ -346,6 +346,11 @@ update access_profiles
   set permissions = array_append(permissions, 'pesquisas:manage')
   where name = 'Gestor' and not ('pesquisas:manage' = any(permissions));
 
+-- Vendas de eventos (novo): dá ao perfil Gestor sem duplicar se já rodou.
+update access_profiles
+  set permissions = array_append(permissions, 'vendas:manage')
+  where name = 'Gestor' and not ('vendas:manage' = any(permissions));
+
 -- ---------- SEMENTES ----------
 
 insert into profile (id) values (1) on conflict (id) do nothing;

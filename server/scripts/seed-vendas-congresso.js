@@ -28,8 +28,7 @@ const products = {
   'Churros': { supplier: 'Raniel', custo: 10.00, venda: 13.00 },
   'Botton': { supplier: 'Convictos', custo: 4.00, venda: 7.00 },
   'Batata frita': { supplier: 'Paulinho', custo: 13.50, venda: 16.00 },
-  'Amarena': { supplier: 'Amarena', custo: 1.00, venda: 4.50 },
-  'Sorvete Amarena': { supplier: 'Amarena', custo: 1.00, venda: 4.50 },
+  'Sorvete Amarena': { supplier: 'Amarena', custo: 1.00, venda: 5.00 },
   'Macarrão': { supplier: 'Paulinho', custo: 16.00, venda: 21.00 },
   'Caldo 500ml': { supplier: 'Elda', custo: 11.00, venda: 16.00 },
   'Pão com pernil': { supplier: 'Paulinho', custo: 20.00, venda: 25.00 },
@@ -73,8 +72,9 @@ const vendas = [
   { produto: 'Camiseta Adulto', codigo: '6', data: '2026-07-24', qty: 11, valor: 605.00 },
   { produto: 'Macarrão', codigo: '14', data: '2026-07-24', qty: 23, valor: 483.00 },
   { produto: 'Batata frita', codigo: '17', data: '2026-07-24', qty: 29, valor: 464.00 },
-  { produto: 'Amarena', codigo: '40', data: '2026-07-24', qty: 67, valor: 335.00 },
-  { produto: 'Sorvete Amarena', codigo: '33', data: '2026-07-24', qty: 49, valor: 245.00 },
+  // Amarena (código 40) e Sorvete Amarena (código 33) eram o mesmo produto
+  // vendido com dois códigos na maquininha — consolidados em uma linha só.
+  { produto: 'Sorvete Amarena', codigo: '33', data: '2026-07-24', qty: 116, valor: 580.00 },
   { produto: 'Água sem gás', codigo: '21', data: '2026-07-24', qty: 47, valor: 117.50 },
   { produto: 'Salsichão', codigo: '5', data: '2026-07-24', qty: 43, valor: 387.00 },
   { produto: 'Água COM gás', codigo: '39', data: '2026-07-24', qty: 36, valor: 108.00 },
@@ -92,7 +92,7 @@ const vendas = [
   { produto: 'Refrigerante 20L', codigo: '9', data: '2026-07-25', qty: 404, valor: 1212.00 },
   { produto: 'Churros', codigo: '38', data: '2026-07-25', qty: 92, valor: 1196.00 },
   { produto: 'Coxinha', codigo: '2', data: '2026-07-25', qty: 107, valor: 963.00 },
-  { produto: 'Sorvete Amarena', codigo: '33', data: '2026-07-25', qty: 155, valor: 775.00 },
+  { produto: 'Sorvete Amarena', codigo: '33', data: '2026-07-25', qty: 203, valor: 1015.00 },
   { produto: 'Espetinho', codigo: '16', data: '2026-07-25', qty: 64, valor: 768.00 },
   { produto: 'Batata frita', codigo: '17', data: '2026-07-25', qty: 43, valor: 688.00 },
   { produto: 'Camiseta Adulto', codigo: '6', data: '2026-07-25', qty: 11, valor: 605.00 },
@@ -100,7 +100,6 @@ const vendas = [
   { produto: 'Botton', codigo: '36', data: '2026-07-25', qty: 62, valor: 434.00 },
   { produto: 'Água sem gás', codigo: '21', data: '2026-07-25', qty: 58, valor: 145.00 },
   { produto: 'Trident', codigo: '8', data: '2026-07-25', qty: 55, valor: 165.00 },
-  { produto: 'Amarena', codigo: '40', data: '2026-07-25', qty: 48, valor: 240.00 },
   { produto: 'Suco 200ml', codigo: '20', data: '2026-07-25', qty: 44, valor: 154.00 },
   { produto: 'Salsichão', codigo: '5', data: '2026-07-25', qty: 40, valor: 360.00 },
   { produto: 'Água COM gás', codigo: '39', data: '2026-07-25', qty: 31, valor: 93.00 },
@@ -150,7 +149,17 @@ async function seedVendas() {
 
     const eventoId = eventoResult.rows[0].id
 
-    // Limpar dados anteriores (opcional)
+    // Só (re)semeia até esta versão dos dados ser aplicada uma vez; depois
+    // disso os valores passam a ser editados pelo admin (quantidade/custo/
+    // venda), e um reseed em todo deploy apagaria essas correções.
+    const SEED_MARK = 'vendas-congresso-2026-v2-consolida-amarena'
+    const mark = await dbQuery('SELECT 1 FROM schema_marks WHERE name = $1', [SEED_MARK])
+    if (mark.rows.length > 0) {
+      console.log('ℹ️  Vendas do Congresso 2026 já foram semeadas antes — pulando (dados agora são editados pelo admin).')
+      process.exit(0)
+    }
+
+    // Limpar dados anteriores (da versão antiga da semente, se houver)
     await dbQuery('DELETE FROM vendas_evento WHERE evento_id = $1', [eventoId])
 
     console.log(`✅ Evento encontrado: ${eventoId}`)
@@ -168,6 +177,8 @@ async function seedVendas() {
     }
 
     console.log(`✅ ${inserted} registros inseridos com sucesso!`)
+
+    await dbQuery('INSERT INTO schema_marks (name) VALUES ($1) ON CONFLICT DO NOTHING', [SEED_MARK])
 
     // Mostrar resumo
     const summary = await dbQuery(`

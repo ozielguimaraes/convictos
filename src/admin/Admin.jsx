@@ -14,6 +14,7 @@ import PerfisSection from "./sections/PerfisSection.jsx";
 import CardapioSection from "./sections/CardapioSection.jsx";
 import EncurtadorSection from "./sections/EncurtadorSection.jsx";
 import PesquisasSection from "./sections/PesquisasSection.jsx";
+import VendasSection from "./sections/VendasSection.jsx";
 
 // Cada seção corresponde a uma área do catálogo do servidor, com níveis
 // "<area>:view" (entra no menu) e "<area>:manage" (pode alterar).
@@ -24,6 +25,7 @@ const SECTIONS = [
   { key: "avisos", label: "Avisos", emoji: "📢" },
   { key: "acoes", label: "Ações entre amigos", emoji: "🎟️" },
   { key: "cardapio", label: "Cardápio", emoji: "🍔" },
+  { key: "vendas", label: "Vendas de eventos", emoji: "📊" },
   { key: "encurtador", label: "Encurtador", emoji: "✂️" },
   { key: "pesquisas", label: "Pesquisas", emoji: "📋" },
   { key: "usuarios", label: "Usuários", emoji: "👥" },
@@ -83,6 +85,7 @@ function Panel({ me, onLogout }) {
           {section === "cardapio" && <CardapioSection canManage={canManage("cardapio")} showToast={showToast} />}
           {section === "encurtador" && <EncurtadorSection canManage={canManage("encurtador")} showToast={showToast} />}
           {section === "pesquisas" && <PesquisasSection canManage={canManage("pesquisas")} showToast={showToast} />}
+          {section === "vendas" && <VendasSection canManage={canManage("vendas")} showToast={showToast} />}
           {section === "usuarios" && <UsuariosSection me={me} canManage={canManage("usuarios")} showToast={showToast} />}
           {section === "perfis" && <PerfisSection canManage={canManage("perfis")} showToast={showToast} />}
         </div>

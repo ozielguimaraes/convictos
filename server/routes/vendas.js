@@ -1,10 +1,11 @@
 import express from 'express'
 import { query as dbQuery } from '../db.js'
+import { requirePermission } from '../auth.js'
 
 const router = express.Router()
 
 // Obter evento por slug ou id
-router.get('/eventos/:slug', async (req, res) => {
+router.get('/eventos/:slug', requirePermission('vendas:view'), async (req, res) => {
   try {
     const { slug } = req.params
 
@@ -54,8 +55,8 @@ router.get('/eventos/:eventoId/vendas/consolidado', async (req, res) => {
   }
 })
 
-// Obter vendas de um evento por data (sem consolidação)
-router.get('/eventos/:eventoId/vendas', async (req, res) => {
+// Obter vendas de um evento por data (sem consolidação) — usado pela edição no admin
+router.get('/eventos/:eventoId/vendas', requirePermission('vendas:view'), async (req, res) => {
   try {
     const { eventoId } = req.params
 
@@ -113,6 +114,75 @@ router.get('/congresso-2026', async (req, res) => {
   } catch (error) {
     console.error('Erro ao buscar vendas do Congresso 2026:', error)
     res.status(500).json({ error: 'Erro ao buscar vendas' })
+  }
+})
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+// Edita a quantidade de um dia/produto específico (uma linha de vendas_evento).
+router.put('/vendas/:id', requirePermission('vendas:manage'), async (req, res) => {
+  try {
+    const { id } = req.params
+    if (!UUID_RE.test(id)) return res.status(400).json({ error: 'id inválido' })
+
+    const quantidade = Number(req.body?.quantidade)
+    if (!Number.isFinite(quantidade) || quantidade < 0) {
+      return res.status(400).json({ error: 'quantidade inválida' })
+    }
+
+    const result = await dbQuery(
+      `UPDATE vendas_evento
+         SET quantidade = $1, valor_total = $1 * preco_venda
+       WHERE id = $2
+       RETURNING *`,
+      [quantidade, id]
+    )
+    if (result.rows.length === 0) return res.status(404).json({ error: 'venda não encontrada' })
+    res.json(result.rows[0])
+  } catch (error) {
+    console.error('Erro ao editar quantidade:', error)
+    res.status(500).json({ error: 'Erro ao editar quantidade' })
+  }
+})
+
+// Edita custo/venda de um produto — aplica a todas as linhas (todos os dias)
+// desse product_code no evento, já que custo e preço são do item, não do dia.
+router.put('/eventos/:eventoId/produtos/:productCode/preco', requirePermission('vendas:manage'), async (req, res) => {
+  try {
+    const { eventoId, productCode } = req.params
+    const precoCusto = Number(req.body?.preco_custo)
+    const precoVenda = Number(req.body?.preco_venda)
+    if (!Number.isFinite(precoCusto) || precoCusto < 0 || !Number.isFinite(precoVenda) || precoVenda < 0) {
+      return res.status(400).json({ error: 'preco_custo/preco_venda inválidos' })
+    }
+
+    const result = await dbQuery(
+      `UPDATE vendas_evento
+         SET preco_custo = $1, preco_venda = $2, valor_total = quantidade * $2
+       WHERE evento_id = $3 AND product_code = $4
+       RETURNING *`,
+      [precoCusto, precoVenda, eventoId, productCode]
+    )
+    res.json(result.rows)
+  } catch (error) {
+    console.error('Erro ao editar preço do produto:', error)
+    res.status(500).json({ error: 'Erro ao editar preço do produto' })
+  }
+})
+
+// Remove uma linha (dia/produto) — usado para consolidar duplicidades,
+// ex.: mesmo item vendido sob dois códigos na maquininha.
+router.delete('/vendas/:id', requirePermission('vendas:manage'), async (req, res) => {
+  try {
+    const { id } = req.params
+    if (!UUID_RE.test(id)) return res.status(400).json({ error: 'id inválido' })
+
+    const result = await dbQuery('DELETE FROM vendas_evento WHERE id = $1 RETURNING id', [id])
+    if (result.rows.length === 0) return res.status(404).json({ error: 'venda não encontrada' })
+    res.json({ ok: true })
+  } catch (error) {
+    console.error('Erro ao remover venda:', error)
+    res.status(500).json({ error: 'Erro ao remover venda' })
   }
 })
 
