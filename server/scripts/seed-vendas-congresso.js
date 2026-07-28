@@ -114,7 +114,7 @@ const vendas = [
   { produto: 'Combo Hambúrg', codigo: '15', data: '2026-07-26', qty: 336, valor: 6686.40 },
   { produto: 'Pastel', codigo: '12', data: '2026-07-26', qty: 147, valor: 2646.00 },
   { produto: 'Sorvete Amarena', codigo: '33', data: '2026-07-26', qty: 527, valor: 2635.00 },
-  { produto: 'Churros', codigo: '38', data: '2026-07-26', qty: 103, valor: 1339.00 },
+  { produto: 'Churros', codigo: '38', data: '2026-07-26', qty: 109, valor: 1417.00 },
   { produto: 'Refrigerante 20L', codigo: '9', data: '2026-07-26', qty: 438, valor: 1314.00 },
   { produto: 'Coxinha', codigo: '2', data: '2026-07-26', qty: 115, valor: 1035.00 },
   { produto: 'Batata frita', codigo: '17', data: '2026-07-26', qty: 49, valor: 784.00 },
