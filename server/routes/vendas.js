@@ -93,6 +93,7 @@ router.get('/congresso-2026', async (req, res) => {
       SELECT
         product_code as code,
         product_name as name,
+        supplier_name as supplier,
         CAST(SUM(CASE WHEN data_venda = '2026-07-23' THEN quantidade ELSE 0 END) AS INT) as "23_07",
         CAST(SUM(CASE WHEN data_venda = '2026-07-24' THEN quantidade ELSE 0 END) AS INT) as "24_07",
         CAST(SUM(CASE WHEN data_venda = '2026-07-25' THEN quantidade ELSE 0 END) AS INT) as "25_07",
@@ -100,7 +101,7 @@ router.get('/congresso-2026', async (req, res) => {
         CAST(SUM(quantidade) AS INT) as total
       FROM vendas_evento
       WHERE evento_id = $1
-      GROUP BY product_code, product_name
+      GROUP BY product_code, product_name, supplier_name
       ORDER BY total DESC
     `, [eventoId])
 

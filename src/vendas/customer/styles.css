@@ -146,6 +146,11 @@
   padding-right: 20px;
 }
 
+.tabela-vendas th.fornecedor {
+  text-align: center;
+  padding: 16px 12px;
+}
+
 .tabela-vendas th.total-col {
   background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
 }
@@ -171,6 +176,13 @@
 .tabela-vendas td.produto-nome {
   font-weight: 500;
   color: #333;
+}
+
+.tabela-vendas td.fornecedor-cell {
+  text-align: center;
+  font-size: 0.9em;
+  color: #666;
+  font-weight: 500;
 }
 
 .tabela-vendas tbody tr:hover {
@@ -310,6 +322,12 @@
     font-size: 0.9em;
   }
 
+  .tabela-vendas th.fornecedor,
+  .tabela-vendas td.fornecedor-cell {
+    padding: 12px 6px;
+    font-size: 0.8em;
+  }
+
   .tabela-vendas th.total-col {
     padding-right: 8px;
   }
@@ -400,6 +418,12 @@
     text-align: right;
   }
 
+  .tabela-vendas th.fornecedor,
+  .tabela-vendas td.fornecedor-cell {
+    padding: 8px 2px;
+    font-size: 0.7em;
+  }
+
   .tabela-vendas td.produto-nome {
     min-width: 100px;
     font-size: 0.85em;
@@ -450,6 +474,12 @@
   .tabela-vendas th,
   .tabela-vendas td {
     padding: 6px 2px;
+  }
+
+  .tabela-vendas th.fornecedor,
+  .tabela-vendas td.fornecedor-cell {
+    padding: 4px 1px;
+    font-size: 0.6em;
   }
 
   .tabela-vendas td.produto-nome {

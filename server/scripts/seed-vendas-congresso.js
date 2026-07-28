@@ -1,5 +1,43 @@
 import { query as dbQuery } from '../db.js'
 
+// Mapeamento produto -> fornecedor (baseado na planilha de controle)
+const suppliers = {
+  'Camiseta Adulto': 'Convictos',
+  'Coxinha': 'Elda',
+  'Batata chips': 'Paulinho',
+  'Coca cola 2L': 'Convictos',
+  'Refrigerante 20L': 'Convictos',
+  'Mineiro 2L': 'Convictos',
+  'Água sem gás': 'Convictos',
+  'Suco 200ml': 'Convictos',
+  'Camiseta Infant': 'Convictos',
+  'Trident': 'Magno',
+  'Água COM gás': 'Convictos',
+  'Bala': 'Magno',
+  'Kit kat': 'Magno',
+  'Mentos': 'Magno',
+  'nutella B-ready': 'Magno',
+  'Salsichão': 'Elda',
+  'Halls': 'Magno',
+  'Fruit-tella': 'Magno',
+  'Trento': 'Magno',
+  'Prestígio': 'Magno',
+  'Combo Hambúrg': 'Paulinho',
+  'Pastel': 'Paulinho',
+  'Espetinho': 'Paulinho',
+  'Churros': 'Raniel',
+  'Botton': 'Convictos',
+  'Batata frita': 'Paulinho',
+  'Amarena': 'Amarena',
+  'Sorvete Amarena': 'Amarena',
+  'Macarrão': 'Paulinho',
+  'Caldo 500ml': 'Elda',
+  'Pão com pernil': 'Paulinho',
+  'Cachorro quente': 'Paulinho',
+  'Caldo 250ml': 'Elda',
+  'Camiseta promo': 'Convictos'
+}
+
 const vendas = [
   // 23/07
   { produto: 'Camiseta Adulto', codigo: '6', data: '2026-07-23', qty: 24, valor: 1320.00 },
@@ -120,10 +158,11 @@ async function seedVendas() {
 
     let inserted = 0
     for (const v of vendas) {
+      const supplier = suppliers[v.produto] || 'Sem fornecedor'
       await dbQuery(
-        `INSERT INTO vendas_evento (evento_id, product_code, product_name, data_venda, quantidade, valor_total)
-         VALUES ($1, $2, $3, $4, $5, $6)`,
-        [eventoId, v.codigo, v.produto, v.data, v.qty, v.valor]
+        `INSERT INTO vendas_evento (evento_id, product_code, product_name, supplier_name, data_venda, quantidade, valor_total)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+        [eventoId, v.codigo, v.produto, supplier, v.data, v.qty, v.valor]
       )
       inserted++
     }

@@ -11,6 +11,7 @@ export default function VendasCongresso2026() {
   const [filtros, setFiltros] = useState({
     dia: '', // '23_07', '24_07', '25_07', '26_07', ''
     produto: '',
+    fornecedor: '',
     ordenar: 'total' // 'total', 'produto', '23_07', '24_07', '25_07', '26_07'
   })
   const [loading, setLoading] = useState(true)
@@ -44,6 +45,10 @@ export default function VendasCongresso2026() {
   const produtosFiltrados = vendas.filter(v => {
     // Filtro por produto
     if (filtros.produto && !v.name.toLowerCase().includes(filtros.produto.toLowerCase())) {
+      return false
+    }
+    // Filtro por fornecedor
+    if (filtros.fornecedor && v.supplier !== filtros.fornecedor) {
       return false
     }
     return true
@@ -109,6 +114,24 @@ export default function VendasCongresso2026() {
         </div>
 
         <div className="filtro-grupo">
+          <label>🏢 Fornecedor:</label>
+          <select
+            value={filtros.fornecedor}
+            onChange={(e) => setFiltros({...filtros, fornecedor: e.target.value})}
+            className="filtro-select"
+          >
+            <option value="">Todos</option>
+            <option value="Convictos">Convictos</option>
+            <option value="Magno">Magno</option>
+            <option value="Elda">Elda</option>
+            <option value="Paulinho">Paulinho</option>
+            <option value="Raniel">Raniel</option>
+            <option value="Ester">Ester</option>
+            <option value="Amarena">Amarena</option>
+          </select>
+        </div>
+
+        <div className="filtro-grupo">
           <label>📋 Ordenar por:</label>
           <select
             value={filtros.ordenar}
@@ -153,6 +176,7 @@ export default function VendasCongresso2026() {
           <thead>
             <tr>
               <th>Produto</th>
+              <th className="fornecedor">Fornecedor</th>
               <th className="numero">23/07</th>
               <th className="numero">24/07</th>
               <th className="numero">25/07</th>
@@ -165,6 +189,7 @@ export default function VendasCongresso2026() {
               produtosOrdenados.map((venda, idx) => (
                 <tr key={idx} className={idx % 2 === 0 ? 'par' : 'impar'}>
                   <td className="produto-nome">{venda.name}</td>
+                  <td className="fornecedor-cell">{venda.supplier || '-'}</td>
                   <td className="numero">{formatNumber(venda['23_07'] || 0)}</td>
                   <td className="numero">{formatNumber(venda['24_07'] || 0)}</td>
                   <td className="numero">{formatNumber(venda['25_07'] || 0)}</td>
@@ -174,7 +199,7 @@ export default function VendasCongresso2026() {
               ))
             ) : (
               <tr>
-                <td colSpan="6" className="sem-dados">Nenhum produto encontrado</td>
+                <td colSpan="7" className="sem-dados">Nenhum produto encontrado</td>
               </tr>
             )}
           </tbody>

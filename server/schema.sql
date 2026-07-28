@@ -440,6 +440,7 @@ create table if not exists vendas_evento (
   evento_id uuid not null references eventos(id) on delete cascade,
   product_code text not null,
   product_name text not null,
+  supplier_name text not null default '',
   data_venda date not null,
   quantidade integer not null default 0,
   valor_total numeric not null default 0,
@@ -447,9 +448,12 @@ create table if not exists vendas_evento (
   updated_at timestamptz not null default now()
 );
 
+alter table vendas_evento add column if not exists supplier_name text not null default '';
+
 create index if not exists idx_vendas_evento_evento_id on vendas_evento(evento_id);
 create index if not exists idx_vendas_evento_data on vendas_evento(data_venda);
 create index if not exists idx_vendas_evento_product on vendas_evento(product_code);
+create index if not exists idx_vendas_evento_supplier on vendas_evento(supplier_name);
 
 -- Sementes de eventos: Congresso 2026
 do $$
