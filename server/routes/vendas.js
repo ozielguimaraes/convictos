@@ -1,5 +1,5 @@
 import express from 'express'
-import db from '../db.js'
+import { query as dbQuery } from '../db.js'
 
 const router = express.Router()
 
@@ -11,7 +11,7 @@ router.get('/eventos/:slug', async (req, res) => {
     // Procurar pelo nome (convertido para slug) ou id
     const slugNormalizado = slug.toLowerCase().replace(/[^a-z0-9-]/g, '-')
 
-    const result = await db.query(
+    const result = await dbQuery(
       'SELECT * FROM eventos WHERE lower(replace(name, \' \', \'-\')) LIKE $1 OR id::text = $2 LIMIT 1',
       [`%${slugNormalizado}%`, slug]
     )
@@ -32,7 +32,7 @@ router.get('/eventos/:eventoId/vendas/consolidado', async (req, res) => {
   try {
     const { eventoId } = req.params
 
-    const result = await db.query(`
+    const result = await dbQuery(`
       SELECT
         product_code,
         product_name,
@@ -59,7 +59,7 @@ router.get('/eventos/:eventoId/vendas', async (req, res) => {
   try {
     const { eventoId } = req.params
 
-    const result = await db.query(
+    const result = await dbQuery(
       `SELECT * FROM vendas_evento
        WHERE evento_id = $1
        ORDER BY data_venda, product_name`,
@@ -77,7 +77,7 @@ router.get('/eventos/:eventoId/vendas', async (req, res) => {
 router.get('/congresso-2026', async (req, res) => {
   try {
     // Buscar o evento Congresso 2026
-    const eventoResult = await db.query(
+    const eventoResult = await dbQuery(
       'SELECT id FROM eventos WHERE name = $1 LIMIT 1',
       ['Congresso 2026']
     )
@@ -89,7 +89,7 @@ router.get('/congresso-2026', async (req, res) => {
     const eventoId = eventoResult.rows[0].id
 
     // Buscar vendas consolidadas
-    const vendas = await db.query(`
+    const vendas = await dbQuery(`
       SELECT
         product_code as code,
         product_name as name,
