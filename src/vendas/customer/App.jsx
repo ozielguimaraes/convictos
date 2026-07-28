@@ -1,6 +1,11 @@
 import { useState, useEffect } from 'react'
 import './styles.css'
 
+// Formatador de números em pt-BR
+const formatNumber = (num) => {
+  return Number(num || 0).toLocaleString('pt-BR')
+}
+
 export default function VendasCongresso2026() {
   const [vendas, setVendas] = useState([])
   const [filtros, setFiltros] = useState({
@@ -12,13 +17,25 @@ export default function VendasCongresso2026() {
   const [error, setError] = useState(null)
 
   useEffect(() => {
+    const startTime = performance.now()
+    console.log('[Vendas] Iniciando carregamento de dados...')
+
     fetch('/api/vendas/congresso-2026')
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        return res.json()
+      })
       .then(data => {
+        const loadTime = performance.now() - startTime
+        console.log(`[Vendas] Dados carregados com sucesso em ${loadTime.toFixed(2)}ms`, {
+          total_produtos: data.length,
+          total_items: data.reduce((sum, v) => sum + (v.total || 0), 0)
+        })
         setVendas(data)
         setLoading(false)
       })
       .catch(err => {
+        console.error('[Vendas] Erro ao carregar dados:', err)
         setError(err.message)
         setLoading(false)
       })
@@ -57,8 +74,23 @@ export default function VendasCongresso2026() {
 
   const totalGeral = produtosFiltrados.reduce((sum, v) => sum + v.total, 0)
 
-  if (loading) return <div className="vendas-container"><p>Carregando...</p></div>
-  if (error) return <div className="vendas-container"><p className="error">Erro: {error}</p></div>
+  if (loading) {
+    return (
+      <div className="vendas-container">
+        <h1>📊 Vendas Congresso 2026</h1>
+        <div className="carregando">Carregando dados</div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="vendas-container">
+        <h1>📊 Vendas Congresso 2026</h1>
+        <p className="error">❌ Erro ao carregar: {error}</p>
+      </div>
+    )
+  }
 
   return (
     <div className="vendas-container">
@@ -133,11 +165,11 @@ export default function VendasCongresso2026() {
               produtosOrdenados.map((venda, idx) => (
                 <tr key={idx} className={idx % 2 === 0 ? 'par' : 'impar'}>
                   <td className="produto-nome">{venda.name}</td>
-                  <td className="numero">{venda['23_07'] || 0}</td>
-                  <td className="numero">{venda['24_07'] || 0}</td>
-                  <td className="numero">{venda['25_07'] || 0}</td>
-                  <td className="numero">{venda['26_07'] || 0}</td>
-                  <td className="numero total-col"><strong>{venda.total}</strong></td>
+                  <td className="numero">{formatNumber(venda['23_07'] || 0)}</td>
+                  <td className="numero">{formatNumber(venda['24_07'] || 0)}</td>
+                  <td className="numero">{formatNumber(venda['25_07'] || 0)}</td>
+                  <td className="numero">{formatNumber(venda['26_07'] || 0)}</td>
+                  <td className="numero total-col"><strong>{formatNumber(venda.total)}</strong></td>
                 </tr>
               ))
             ) : (

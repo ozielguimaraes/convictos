@@ -223,13 +223,47 @@
   font-size: 1.1em;
 }
 
+/* Loading state */
+.carregando {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  gap: 12px;
+  font-size: 1.1em;
+  color: #666;
+}
+
+.carregando::after {
+  content: '';
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid #2196F3;
+  border-radius: 50%;
+  border-top-color: transparent;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Tablet - 768px e abaixo */
 @media (max-width: 768px) {
+  .vendas-container {
+    padding: 16px;
+  }
+
   .vendas-container h1 {
     font-size: 1.8em;
+    margin-bottom: 20px;
   }
 
   .filtros {
     flex-direction: column;
+    padding: 16px;
+    gap: 16px;
   }
 
   .filtro-grupo {
@@ -238,23 +272,191 @@
 
   .resumo {
     grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .resumo-card {
+    padding: 16px;
+  }
+
+  .resumo-valor {
+    font-size: 1.4em;
+  }
+
+  .resumo-label {
+    font-size: 0.8em;
+  }
+
+  .tabela-container {
+    margin-bottom: 20px;
   }
 
   .tabela-vendas {
     font-size: 0.85em;
   }
 
-  .tabela-vendas th,
+  .tabela-vendas th {
+    padding: 12px 8px;
+  }
+
   .tabela-vendas td {
     padding: 10px 8px;
   }
 
   .tabela-vendas th.numero,
   .tabela-vendas td.numero {
-    padding-right: 10px;
+    padding-right: 8px;
+    font-size: 0.9em;
+  }
+
+  .tabela-vendas th.total-col {
+    padding-right: 8px;
+  }
+
+  .produto-nome {
+    min-width: 120px;
+    word-break: break-word;
+  }
+
+  .rodape {
+    padding: 16px;
+    font-size: 0.95em;
+  }
+}
+
+/* Mobile - 480px e abaixo */
+@media (max-width: 480px) {
+  .vendas-container {
+    padding: 12px;
+  }
+
+  .vendas-container h1 {
+    font-size: 1.4em;
+    margin-bottom: 16px;
+  }
+
+  .filtros {
+    padding: 12px;
+    gap: 12px;
+  }
+
+  .filtro-input,
+  .filtro-select {
+    padding: 10px;
+    font-size: 16px; /* Evita zoom automático em iOS */
+  }
+
+  .filtro-grupo label {
+    font-size: 0.85em;
+  }
+
+  .resumo {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .resumo-card {
+    padding: 12px;
+  }
+
+  .resumo-label {
+    font-size: 0.75em;
+    margin-bottom: 6px;
   }
 
   .resumo-valor {
-    font-size: 1.4em;
+    font-size: 1.2em;
+  }
+
+  .tabela-container {
+    margin-bottom: 16px;
+    border-radius: 4px;
+  }
+
+  .tabela-vendas {
+    font-size: 0.75em;
+  }
+
+  .tabela-vendas thead {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  .tabela-vendas th {
+    padding: 8px 4px;
+    font-size: 0.8em;
+  }
+
+  .tabela-vendas td {
+    padding: 8px 4px;
+  }
+
+  .tabela-vendas th.numero,
+  .tabela-vendas td.numero {
+    padding-right: 4px;
+    text-align: right;
+  }
+
+  .tabela-vendas td.produto-nome {
+    min-width: 100px;
+    font-size: 0.85em;
+  }
+
+  .sem-dados {
+    padding: 20px 8px !important;
+    font-size: 0.9em;
+  }
+
+  .rodape {
+    padding: 12px;
+    font-size: 0.9em;
+  }
+
+  .rodape p {
+    margin: 8px 0;
+  }
+}
+
+/* Small devices - 360px e abaixo */
+@media (max-width: 360px) {
+  .vendas-container {
+    padding: 8px;
+  }
+
+  .vendas-container h1 {
+    font-size: 1.2em;
+    margin-bottom: 12px;
+  }
+
+  .filtros {
+    padding: 8px;
+  }
+
+  .resumo {
+    gap: 8px;
+  }
+
+  .resumo-card {
+    padding: 10px;
+  }
+
+  .tabela-vendas {
+    font-size: 0.7em;
+  }
+
+  .tabela-vendas th,
+  .tabela-vendas td {
+    padding: 6px 2px;
+  }
+
+  .tabela-vendas td.produto-nome {
+    min-width: 80px;
+  }
+
+  .rodape {
+    padding: 10px;
   }
 }
