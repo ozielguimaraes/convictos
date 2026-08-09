@@ -136,7 +136,7 @@ export default function VendasSection({ canManage, showToast }) {
                         </td>
                       );
                     })}
-                    <td><strong>{total}</strong></td>
+                    <td><strong>{total.toLocaleString("pt-BR")}</strong></td>
                     <td>
                       R$ <input
                         type="number" min="0" step="0.01"

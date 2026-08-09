@@ -1,5 +1,20 @@
 # WORKLOG
 
+## 2026-08-09 — Máscara de milhar nos valores + fix do spinner no campo Vendidos
+
+- Pedido do maestro: exibir valores com separador de milhar (regra global,
+  registrada também no rules.md do orquestrador e na memória do Claude) e
+  corrigir o spinner nativo do input "Vendidos" colidindo com o hint "de N".
+- `src/lib/format.js`: `fmt` agora usa `toLocaleString("pt-BR")` →
+  `R$ 1.234,56` (vale para Ações, cardápio cliente/admin e pedidos, que
+  importam o mesmo helper); `strToPrice` aceita valor colado com milhar
+  ("1.234,56" → 1234.56) sem quebrar "10,50"/"10.50". Inputs seguem sem
+  máscara.
+- `src/admin/sections/VendasSection.jsx`: total de quantidade com milhar.
+- `src/admin.css`: spinner do `type=number` escondido em `.bloco-fields`
+  (colidia com o hint) + padding-right pra reservar o espaço do hint.
+- Verificação: teste de `fmt`/`strToPrice` via node + `npm run build` OK.
+
 ## 2026-08-09 — Ações entre amigos: navegação por vendedor e blocos em lote
 
 - Pedido do maestro: ao abrir uma ação, mostrar só 1 linha de resumo por
