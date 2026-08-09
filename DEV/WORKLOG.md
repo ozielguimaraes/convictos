@@ -1,5 +1,20 @@
 # WORKLOG
 
+## 2026-08-09 — Limites nos campos Vendidos/Recebido do bloco
+
+- Pedido do maestro: não deixar "Vendidos" passar da quantidade do bloco nem
+  "Recebido" passar do valor total do bloco, com mensagem indicativa ao
+  digitar.
+- `src/admin/sections/AcoesSection.jsx` (`BlocoRow`): ao digitar acima do
+  limite, o input fica com borda vermelha, aparece o aviso `.bloco-err`
+  ("máximo N números" / "o bloco vale no máximo R$ X") e o botão Salvar
+  desabilita mostrando "Corrija ⚠". Cálculos exibidos truncam no teto.
+- `server/routes/acoes.js` (`blockInput`): passou a receber a ação inteira e
+  valida também `received ≤ block_size × number_price` (sold_count já era
+  validado).
+- `src/admin.css`: `.bloco-fields input.err` e `.bloco-err`.
+- Verificação: `node --check` no route + `npm run build` OK.
+
 ## 2026-08-09 — Máscara de milhar nos valores + fix do spinner no campo Vendidos
 
 - Pedido do maestro: exibir valores com separador de milhar (regra global,

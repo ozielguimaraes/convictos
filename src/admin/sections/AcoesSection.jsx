@@ -65,11 +65,18 @@ function BlocoRow({ acao, block, canManage, onSaved, onDeleted, showToast, askCo
   const [returned, setReturned] = useState(block.returned);
   const [saving, setSaving] = useState(false);
 
-  const soldN = Math.min(Math.max(parseInt(sold, 10) || 0, 0), acao.block_size);
+  const soldN = Math.max(parseInt(sold, 10) || 0, 0);
   const receivedN = strToPrice(received);
+  const maxReceived = acao.block_size * acao.number_price;
+  const soldOver = soldN > acao.block_size;
+  const receivedOver = receivedN > maxReceived + 0.004;
+  const invalid = soldOver || receivedOver;
   const dirty = soldN !== block.sold_count || returned !== block.returned || Math.abs(receivedN - block.received) > 0.004;
-  const soldValue = soldN * acao.number_price;
-  const pending = blockPending(acao, returned, soldN, receivedN);
+  // Nos cálculos exibidos, valores acima do limite entram truncados no teto.
+  const soldCalc = Math.min(soldN, acao.block_size);
+  const receivedCalc = Math.min(receivedN, maxReceived);
+  const soldValue = soldCalc * acao.number_price;
+  const pending = blockPending(acao, returned, soldCalc, receivedCalc);
 
   const payStatus = !returned
     ? null
@@ -121,15 +128,23 @@ function BlocoRow({ acao, block, canManage, onSaved, onDeleted, showToast, askCo
         <label>
           Vendidos
           <input type="number" min={0} max={acao.block_size} inputMode="numeric" value={sold}
+            className={soldOver ? "err" : undefined}
             onChange={(e) => setSold(e.target.value)} />
           <span className="bloco-hint">de {acao.block_size}</span>
         </label>
         <label>
           Recebido R$
           <input type="text" inputMode="decimal" placeholder="0,00" value={received}
+            className={receivedOver ? "err" : undefined}
             onChange={(e) => setReceived(e.target.value)} />
         </label>
       </div>
+      {invalid && (
+        <div className="bloco-err">
+          {soldOver && <>⚠️ Vendidos: este bloco tem no máximo <b>{acao.block_size}</b> números. </>}
+          {receivedOver && <>⚠️ Recebido: o bloco vale no máximo <b>{fmt(maxReceived)}</b>.</>}
+        </div>
+      )}
       <div className="bloco-calc">
         <span>Vendido: <b>{fmt(soldValue)}</b></span>
         {payStatus && <span className={payStatus === "pago ✓" ? "ok" : "pend"}>{payStatus}</span>}
@@ -139,8 +154,8 @@ function BlocoRow({ acao, block, canManage, onSaved, onDeleted, showToast, askCo
             : "✓ acertado"}
         </span>
         {canManage && (
-          <button className="btn-small-save" onClick={save} disabled={!dirty || saving}>
-            {saving ? "Salvando…" : dirty ? "Salvar" : "Salvo ✓"}
+          <button className="btn-small-save" onClick={save} disabled={!dirty || saving || invalid}>
+            {saving ? "Salvando…" : invalid ? "Corrija ⚠" : dirty ? "Salvar" : "Salvo ✓"}
           </button>
         )}
       </div>

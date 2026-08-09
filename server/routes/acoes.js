@@ -236,16 +236,20 @@ acoesRouter.delete("/admin/sellers/:id", manageAcoes, async (req, res, next) => 
 
 // ---------- blocos ----------
 
-function blockInput(body, blockSize) {
+function blockInput(body, acao) {
   const start_number = Number(body.start_number);
   const sold_count = Number(body.sold_count ?? 0);
   const received = Number(body.received ?? 0);
   const returned = !!body.returned;
+  const maxReceived = acao.block_size * acao.number_price;
   if (!Number.isInteger(start_number) || start_number < 1) return { error: "número inicial inválido" };
-  if (!Number.isInteger(sold_count) || sold_count < 0 || sold_count > blockSize) {
-    return { error: `números vendidos deve ficar entre 0 e ${blockSize}` };
+  if (!Number.isInteger(sold_count) || sold_count < 0 || sold_count > acao.block_size) {
+    return { error: `números vendidos deve ficar entre 0 e ${acao.block_size}` };
   }
   if (!(received >= 0)) return { error: "valor recebido inválido" };
+  if (received > maxReceived + 0.004) {
+    return { error: `recebido não pode passar do valor do bloco (R$ ${maxReceived.toFixed(2).replace(".", ",")})` };
+  }
   return { start_number, sold_count, received, returned };
 }
 
@@ -254,7 +258,7 @@ acoesRouter.post("/admin/sellers/:id/blocks", manageAcoes, async (req, res, next
     const seller = await query("select id, acao_id from acao_sellers where id = $1", [req.params.id]);
     if (!seller.rows.length) return res.status(404).json({ error: "vendedor não encontrado" });
     const acao = await getAcao(seller.rows[0].acao_id);
-    const input = blockInput(req.body, acao.block_size);
+    const input = blockInput(req.body, acao);
     if (input.error) return res.status(400).json({ error: input.error });
     const clash = await findOverlap(acao.id, input.start_number, acao.block_size, null);
     if (clash) {
@@ -278,7 +282,7 @@ acoesRouter.put("/admin/blocks/:id", manageAcoes, async (req, res, next) => {
     const cur = await query("select id, acao_id from acao_blocks where id = $1", [req.params.id]);
     if (!cur.rows.length) return res.status(404).json({ error: "bloco não encontrado" });
     const acao = await getAcao(cur.rows[0].acao_id);
-    const input = blockInput(req.body, acao.block_size);
+    const input = blockInput(req.body, acao);
     if (input.error) return res.status(400).json({ error: input.error });
     const clash = await findOverlap(acao.id, input.start_number, acao.block_size, cur.rows[0].id);
     if (clash) {
