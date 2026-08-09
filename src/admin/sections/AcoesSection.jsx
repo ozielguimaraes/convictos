@@ -1,7 +1,9 @@
 /* Ações entre amigos: cadastro de ações, vendedores e blocos de números.
    Ciclo do bloco: o vendedor pega (deve o bloco inteiro) → entrega e o acerto
    passa a ser sobre o vendido (pago, parcial ou não pago). Pendente é sempre
-   calculado: (entregue ? vendidos : bloco inteiro) × valor − recebido. */
+   calculado: (entregue ? vendidos : bloco inteiro) × valor − recebido.
+   Navegação: lista de ações → ação (resumo por vendedor, 1 linha) → vendedor
+   (todos os blocos e a situação). */
 import React, { useState, useEffect } from "react";
 import { api } from "../../lib/api.js";
 import { fmt, strToPrice } from "../../lib/format.js";
@@ -11,6 +13,35 @@ const blockLabel = (b, size) => `${b.start_number}–${b.start_number + size - 1
 function blockPending(acao, returned, soldCount, received) {
   const owed = (returned ? soldCount : acao.block_size) * acao.number_price;
   return Math.max(0, owed - received);
+}
+
+const sellerTotals = (acao, seller) => ({
+  sold: seller.blocks.reduce((s, b) => s + b.sold_count * acao.number_price, 0),
+  soldCount: seller.blocks.reduce((s, b) => s + b.sold_count, 0),
+  received: seller.blocks.reduce((s, b) => s + b.received, 0),
+  pending: seller.blocks.reduce((s, b) => s + blockPending(acao, b.returned, b.sold_count, b.received), 0),
+});
+
+/* ---------- confirmação (substitui o confirm nativo) ---------- */
+
+function useConfirm() {
+  const [dlg, setDlg] = useState(null);
+  const ask = (title, message, confirmLabel, onConfirm) => setDlg({ title, message, confirmLabel, onConfirm });
+  const element = dlg && (
+    <div className="modal-backdrop" onClick={() => setDlg(null)}>
+      <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+        <h4>{dlg.title}</h4>
+        <p>{dlg.message}</p>
+        <div className="modal-actions">
+          <button className="modal-btn cancel" onClick={() => setDlg(null)}>Cancelar</button>
+          <button className="modal-btn danger" onClick={() => { setDlg(null); dlg.onConfirm(); }}>
+            {dlg.confirmLabel}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+  return [element, ask];
 }
 
 function Totais({ sold, received, pending }) {
@@ -28,7 +59,7 @@ function Totais({ sold, received, pending }) {
 
 /* ---------- bloco (linha editável) ---------- */
 
-function BlocoRow({ acao, block, canManage, onSaved, onDeleted, showToast }) {
+function BlocoRow({ acao, block, canManage, onSaved, onDeleted, showToast, askConfirm }) {
   const [sold, setSold] = useState(String(block.sold_count));
   const [received, setReceived] = useState(block.received ? String(block.received).replace(".", ",") : "");
   const [returned, setReturned] = useState(block.returned);
@@ -66,14 +97,15 @@ function BlocoRow({ acao, block, canManage, onSaved, onDeleted, showToast }) {
     }
   };
 
-  const del = async () => {
-    if (!confirm(`Excluir o bloco ${blockLabel(block, acao.block_size)}?`)) return;
-    try {
-      await api.del(`/api/admin/blocks/${block.id}`);
-      onDeleted(block);
-    } catch (e) {
-      showToast("Erro ao excluir: " + e.message, true);
-    }
+  const del = () => {
+    askConfirm("Excluir bloco", `Excluir o bloco ${blockLabel(block, acao.block_size)}?`, "Excluir", async () => {
+      try {
+        await api.del(`/api/admin/blocks/${block.id}`);
+        onDeleted(block);
+      } catch (e) {
+        showToast("Erro ao excluir: " + e.message, true);
+      }
+    });
   };
 
   return (
@@ -116,58 +148,105 @@ function BlocoRow({ acao, block, canManage, onSaved, onDeleted, showToast }) {
   );
 }
 
-/* ---------- vendedor ---------- */
+/* ---------- adicionar blocos (vários de uma vez, separados por vírgula) ---------- */
 
-function VendedorCard({ acao, seller, canManage, onChanged, showToast }) {
+function AddBlocksForm({ acao, seller, onCreated, showToast }) {
+  const [text, setText] = useState("");
   const [adding, setAdding] = useState(false);
 
-  const soldValue = seller.blocks.reduce((s, b) => s + b.sold_count * acao.number_price, 0);
-  const received = seller.blocks.reduce((s, b) => s + b.received, 0);
-  const pending = seller.blocks.reduce((s, b) => s + blockPending(acao, b.returned, b.sold_count, b.received), 0);
+  const allStarts = acao.sellers.flatMap((s) => s.blocks.map((b) => b.start_number));
+  const suggested = allStarts.length ? Math.max(...allStarts) + acao.block_size : 1;
 
-  // Sugere o próximo início livre: maior início da ação + tamanho do bloco.
-  const addBlock = async () => {
-    const allStarts = acao.sellers.flatMap((s) => s.blocks.map((b) => b.start_number));
-    const suggested = allStarts.length ? Math.max(...allStarts) + acao.block_size : 1;
-    const answer = prompt("Número inicial do bloco:", String(suggested));
-    if (answer === null) return;
-    const start = parseInt(answer, 10);
-    if (!start || start < 1) { showToast("Número inicial inválido", true); return; }
+  const add = async () => {
+    const tokens = text.split(/[,;\s]+/).filter(Boolean);
+    if (tokens.some((t) => !/^\d+$/.test(t))) {
+      showToast("Use só números separados por vírgula. Ex.: 1, 21, 41", true);
+      return;
+    }
+    // Vazio = atalho para o próximo bloco livre sugerido.
+    const starts = tokens.length ? [...new Set(tokens.map(Number))] : [suggested];
+    if (starts.some((n) => n < 1)) { showToast("Número inicial deve ser 1 ou maior", true); return; }
+
     setAdding(true);
-    try {
-      const created = await api.post(`/api/admin/sellers/${seller.id}/blocks`, { start_number: start });
-      onChanged((sellers) => sellers.map((s) => (s.id === seller.id ? { ...s, blocks: [...s.blocks, created].sort((a, b) => a.start_number - b.start_number) } : s)));
-      showToast(`✓ Bloco ${start}–${start + acao.block_size - 1} adicionado!`);
-    } catch (e) {
-      showToast("Erro: " + e.message, true);
-    } finally {
-      setAdding(false);
+    const created = [];
+    const failed = [];
+    for (const start of starts) {
+      try {
+        created.push(await api.post(`/api/admin/sellers/${seller.id}/blocks`, { start_number: start }));
+      } catch (e) {
+        failed.push(`${start} (${e.message})`);
+      }
+    }
+    setAdding(false);
+    if (created.length) {
+      onCreated(created);
+      setText("");
+    }
+    if (failed.length) {
+      showToast(`${created.length} adicionado(s) · falhou: ${failed.join(" · ")}`, true);
+    } else {
+      showToast(created.length === 1
+        ? `✓ Bloco ${blockLabel(created[0], acao.block_size)} adicionado!`
+        : `✓ ${created.length} blocos adicionados!`);
     }
   };
 
-  const rename = async () => {
-    if (!canManage) return;
-    const name = prompt("Nome do vendedor:", seller.name);
-    if (!name || name.trim() === seller.name) return;
+  return (
+    <div className="add-blocks">
+      <label className="add-blocks-label">Novo bloco — início de cada um, separados por vírgula</label>
+      <div className="add-blocks-form">
+        <input type="text" inputMode="numeric" value={text} placeholder={`Ex.: ${suggested} ou ${suggested}, ${suggested + acao.block_size}, ${suggested + acao.block_size * 2}`}
+          onChange={(e) => setText(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && !adding && add()} />
+        <button className="add-blocks-btn" onClick={add} disabled={adding}>
+          {adding ? "…" : "+ Adicionar"}
+        </button>
+      </div>
+      <div className="add-blocks-hint">Vazio adiciona o próximo livre ({suggested}–{suggested + acao.block_size - 1}). Cada bloco tem {acao.block_size} números.</div>
+    </div>
+  );
+}
+
+/* ---------- detalhe do vendedor (todos os números e a situação) ---------- */
+
+function VendedorDetail({ acao, seller, canManage, onChanged, onBack, showToast, askConfirm }) {
+  const [editingName, setEditingName] = useState(false);
+  const [name, setName] = useState(seller.name);
+
+  const { sold, received, pending } = sellerTotals(acao, seller);
+
+  const saveName = async () => {
+    const trimmed = name.trim();
+    setEditingName(false);
+    if (!trimmed || trimmed === seller.name) { setName(seller.name); return; }
     try {
-      const saved = await api.put(`/api/admin/sellers/${seller.id}`, { name: name.trim() });
+      const saved = await api.put(`/api/admin/sellers/${seller.id}`, { name: trimmed });
       onChanged((sellers) => sellers.map((s) => (s.id === seller.id ? { ...s, name: saved.name } : s)));
+      showToast("✓ Nome salvo!");
     } catch (e) {
+      setName(seller.name);
       showToast("Erro: " + e.message, true);
     }
   };
 
-  const del = async () => {
-    if (!confirm(`Excluir ${seller.name} e todos os seus blocos?`)) return;
-    try {
-      await api.del(`/api/admin/sellers/${seller.id}`);
-      onChanged((sellers) => sellers.filter((s) => s.id !== seller.id));
-      showToast("✓ Vendedor excluído!");
-    } catch (e) {
-      showToast("Erro ao excluir: " + e.message, true);
-    }
+  const del = () => {
+    askConfirm("Excluir vendedor", `Excluir ${seller.name} e todos os seus blocos?`, "Excluir", async () => {
+      try {
+        await api.del(`/api/admin/sellers/${seller.id}`);
+        onChanged((sellers) => sellers.filter((s) => s.id !== seller.id));
+        onBack();
+        showToast("✓ Vendedor excluído!");
+      } catch (e) {
+        showToast("Erro ao excluir: " + e.message, true);
+      }
+    });
   };
 
+  const onBlocksCreated = (created) => {
+    onChanged((sellers) => sellers.map((s) => (s.id === seller.id
+      ? { ...s, blocks: [...s.blocks, ...created].sort((a, b) => a.start_number - b.start_number) }
+      : s)));
+  };
   const onBlockSaved = (saved) => {
     onChanged((sellers) => sellers.map((s) => (s.id === seller.id ? { ...s, blocks: s.blocks.map((b) => (b.id === saved.id ? saved : b)) } : s)));
   };
@@ -177,32 +256,41 @@ function VendedorCard({ acao, seller, canManage, onChanged, showToast }) {
 
   return (
     <div className="form-block vendedor">
+      <button className="link-btn back-btn" onClick={onBack}>← Vendedores</button>
       <div className="vendedor-top">
-        <h3 onClick={rename} title={canManage ? "Toque para renomear" : undefined}>{seller.name}</h3>
+        {editingName && canManage ? (
+          <input className="vend-name-input" autoFocus value={name}
+            onChange={(e) => setName(e.target.value)}
+            onBlur={saveName}
+            onKeyDown={(e) => e.key === "Enter" && e.target.blur()} />
+        ) : (
+          <h3 onClick={() => canManage && setEditingName(true)} title={canManage ? "Toque para renomear" : undefined}>
+            {seller.name}{canManage && <span className="edit-hint"> ✏️</span>}
+          </h3>
+        )}
         {canManage && <button className="cat-del" onClick={del}>Excluir</button>}
       </div>
-      <Totais sold={soldValue} received={received} pending={pending} />
+      <Totais sold={sold} received={received} pending={pending} />
+      {canManage && <AddBlocksForm acao={acao} seller={seller} onCreated={onBlocksCreated} showToast={showToast} />}
       {seller.blocks.length === 0 && <div className="vendedor-empty">Nenhum bloco ainda.</div>}
       <fieldset className="ro-fieldset" disabled={!canManage}>
         {seller.blocks.map((b) => (
-          <BlocoRow key={b.id} acao={acao} block={b} canManage={canManage} onSaved={onBlockSaved} onDeleted={onBlockDeleted} showToast={showToast} />
+          <BlocoRow key={b.id} acao={acao} block={b} canManage={canManage}
+            onSaved={onBlockSaved} onDeleted={onBlockDeleted} showToast={showToast} askConfirm={askConfirm} />
         ))}
       </fieldset>
-      {canManage && (
-        <button className="add-item-btn" onClick={addBlock} disabled={adding}>
-          {adding ? "Adicionando…" : `+ Adicionar bloco (${acao.block_size} números)`}
-        </button>
-      )}
     </div>
   );
 }
 
-/* ---------- detalhe da ação ---------- */
+/* ---------- detalhe da ação (1 linha de resumo por vendedor) ---------- */
 
 function AcaoDetail({ id, canManage, onBack, showToast }) {
   const [acao, setAcao] = useState(null);
+  const [sellerId, setSellerId] = useState(null);
   const [newSeller, setNewSeller] = useState("");
   const [adding, setAdding] = useState(false);
+  const [confirmEl, askConfirm] = useConfirm();
 
   useEffect(() => {
     api.get(`/api/admin/acoes/${id}`).then(setAcao).catch((e) => showToast("Erro ao carregar: " + e.message, true));
@@ -211,6 +299,17 @@ function AcaoDetail({ id, canManage, onBack, showToast }) {
   if (!acao) return <div className="a-loading">Carregando ação…</div>;
 
   const setSellers = (fn) => setAcao((a) => ({ ...a, sellers: fn(a.sellers) }));
+  const openSeller = acao.sellers.find((s) => s.id === sellerId);
+
+  if (openSeller) {
+    return (
+      <React.Fragment>
+        <VendedorDetail acao={acao} seller={openSeller} canManage={canManage} onChanged={setSellers}
+          onBack={() => setSellerId(null)} showToast={showToast} askConfirm={askConfirm} />
+        {confirmEl}
+      </React.Fragment>
+    );
+  }
 
   const addSeller = async () => {
     if (!newSeller.trim()) { showToast("Nome obrigatório", true); return; }
@@ -280,9 +379,29 @@ function AcaoDetail({ id, canManage, onBack, showToast }) {
         </div>
       </div>
 
-      {acao.sellers.map((s) => (
-        <VendedorCard key={s.id} acao={acao} seller={s} canManage={canManage} onChanged={setSellers} showToast={showToast} />
-      ))}
+      <div className="form-block">
+        <h3>Vendedores</h3>
+        {acao.sellers.length === 0 && <div className="vendedor-empty">Nenhum vendedor ainda.</div>}
+        <div className="vend-list">
+          {acao.sellers.map((s) => {
+            const t = sellerTotals(acao, s);
+            return (
+              <button className="vend-row" key={s.id} onClick={() => setSellerId(s.id)}>
+                <span className="vend-info">
+                  <span className="vend-name">{s.name}</span>
+                  <span className="vend-sub">
+                    {s.blocks.length} bloco{s.blocks.length === 1 ? "" : "s"} · {t.soldCount} vendido{t.soldCount === 1 ? "" : "s"} · {fmt(t.received)} recebido
+                  </span>
+                </span>
+                <span className={"vend-pend" + (t.pending > 0.004 ? " pend" : " ok")}>
+                  {t.pending > 0.004 ? fmt(t.pending) : "✓ acertado"}
+                </span>
+                <span className="vend-chevron">›</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
       {canManage && (
         <div className="form-block">
@@ -297,6 +416,7 @@ function AcaoDetail({ id, canManage, onBack, showToast }) {
           </button>
         </div>
       )}
+      {confirmEl}
     </React.Fragment>
   );
 }
@@ -308,6 +428,7 @@ export default function AcoesSection({ canManage, showToast }) {
   const [openId, setOpenId] = useState(null);
   const [draft, setDraft] = useState({ name: "", price: "", size: "10", publicRanking: false, showSold: false });
   const [saving, setSaving] = useState(false);
+  const [confirmEl, askConfirm] = useConfirm();
 
   const load = () => api.get("/api/admin/acoes").then(setAcoes).catch((e) => showToast("Erro ao carregar: " + e.message, true));
   useEffect(() => { load(); }, []);
@@ -337,15 +458,16 @@ export default function AcoesSection({ canManage, showToast }) {
     }
   };
 
-  const del = async (a) => {
-    if (!confirm(`Excluir a ação "${a.name}" com todos os vendedores e blocos?`)) return;
-    try {
-      await api.del(`/api/admin/acoes/${a.id}`);
-      setAcoes((list) => list.filter((x) => x.id !== a.id));
-      showToast("✓ Ação excluída!");
-    } catch (e) {
-      showToast("Erro ao excluir: " + e.message, true);
-    }
+  const del = (a) => {
+    askConfirm("Excluir ação", `Excluir a ação "${a.name}" com todos os vendedores e blocos?`, "Excluir", async () => {
+      try {
+        await api.del(`/api/admin/acoes/${a.id}`);
+        setAcoes((list) => list.filter((x) => x.id !== a.id));
+        showToast("✓ Ação excluída!");
+      } catch (e) {
+        showToast("Erro ao excluir: " + e.message, true);
+      }
+    });
   };
 
   return (
@@ -362,7 +484,7 @@ export default function AcoesSection({ canManage, showToast }) {
             {a.public_ranking && " · 🏆 ranking público"}
           </div>
           <Totais sold={a.sold_value} received={a.received} pending={a.pending} />
-          <button className="add-item-btn" onClick={() => setOpenId(a.id)}>Abrir vendedores e blocos →</button>
+          <button className="add-item-btn" onClick={() => setOpenId(a.id)}>Abrir vendedores →</button>
         </div>
       ))}
 
@@ -403,6 +525,7 @@ export default function AcoesSection({ canManage, showToast }) {
         </button>
       </div>
       )}
+      {confirmEl}
     </React.Fragment>
   );
 }

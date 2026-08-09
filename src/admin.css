@@ -223,6 +223,46 @@ input { font-family: inherit; }
 .back-btn { color: var(--muted); font-weight: 700; font-size: 14px; padding: 0 0 12px; display: inline-block; }
 .ranking-link { color: var(--green-dark); font-weight: 700; font-size: 13px; align-self: center; }
 
+/* lista de vendedores: 1 linha de resumo por vendedor */
+.vend-list { display: flex; flex-direction: column; }
+.vend-row { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; padding: 12px 2px; border-top: 1px solid var(--line); background: none; }
+.vend-row:first-child { border-top: none; }
+.vend-row:active { background: rgba(147, 184, 92, 0.08); }
+.vend-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.vend-name { font-family: var(--font-head); font-weight: 800; font-size: 15px; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vend-sub { font-size: 11.5px; color: var(--muted); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vend-pend { font-size: 12px; font-weight: 800; border-radius: 999px; padding: 5px 10px; white-space: nowrap; }
+.vend-pend.pend { color: #a35c00; background: #fff7e6; border: 1px solid #f0c36c; }
+.vend-pend.ok { color: var(--green-dark); background: rgba(147, 184, 92, 0.12); border: 1px solid var(--green); }
+.vend-chevron { color: var(--muted); font-size: 20px; font-weight: 700; line-height: 1; }
+
+.vend-name-input { flex: 1; min-width: 0; font-family: var(--font-head); font-weight: 800; font-size: 16px; color: var(--green-dark); border: none; border-bottom: 2px solid var(--green); background: transparent; padding: 2px 0; }
+.vend-name-input:focus { outline: none; }
+.edit-hint { font-size: 12px; opacity: 0.55; }
+
+/* adicionar blocos (aceita vários inícios separados por vírgula) */
+.add-blocks { border: 1.5px dashed var(--green); border-radius: 14px; padding: 12px; margin-bottom: 12px; background: rgba(147, 184, 92, 0.06); }
+.add-blocks-label { display: block; font-size: 11.5px; font-weight: 800; color: var(--green-dark); text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 8px; }
+.add-blocks-form { display: flex; gap: 8px; }
+.add-blocks-form input { flex: 1; min-width: 0; border: 1.5px solid var(--line); border-radius: 10px; padding: 10px 12px; background: #fff; font-size: 15px; font-weight: 700; color: var(--ink); }
+.add-blocks-form input:focus { outline: none; border-color: var(--green); }
+.add-blocks-btn { font-size: 13px; font-weight: 800; color: #fff; background: var(--green-dark); border-radius: 10px; padding: 10px 14px; white-space: nowrap; }
+.add-blocks-btn:disabled { opacity: 0.5; }
+.add-blocks-hint { font-size: 11.5px; color: var(--muted); font-weight: 600; margin-top: 7px; }
+
+/* modal de confirmação (substitui o confirm nativo) */
+.modal-backdrop { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.45); z-index: 60; display: grid; place-items: center; padding: 20px; animation: modal-fade 0.15s ease; }
+.modal-card { background: var(--paper, #fff); border-radius: 20px; padding: 20px; width: 100%; max-width: 340px; box-shadow: 0 16px 48px rgba(0, 0, 0, 0.3); animation: modal-pop 0.18s ease; }
+.modal-card h4 { font-family: var(--font-head); font-size: 16px; margin: 0 0 8px; color: var(--ink); }
+.modal-card p { margin: 0; font-size: 14px; line-height: 1.5; color: var(--muted); font-weight: 600; }
+.modal-actions { display: flex; gap: 10px; margin-top: 18px; }
+.modal-btn { flex: 1; padding: 12px; border-radius: 12px; font-weight: 800; font-size: 14px; }
+.modal-btn.cancel { background: #fff; border: 1.5px solid var(--line); color: var(--muted); }
+.modal-btn.danger { background: var(--danger); color: #fff; box-shadow: 0 3px 0 rgba(0, 0, 0, 0.15); }
+.modal-btn:active { transform: translateY(1px); }
+@keyframes modal-fade { from { opacity: 0; } }
+@keyframes modal-pop { from { opacity: 0; transform: scale(0.92); } }
+
 /* ===== usuários e perfis de acesso ===== */
 .perm-grid { display: flex; flex-wrap: wrap; gap: 6px; }
 .perm-table { display: flex; flex-direction: column; gap: 6px; }

@@ -1,5 +1,23 @@
 # WORKLOG
 
+## 2026-08-09 — Ações entre amigos: navegação por vendedor e blocos em lote
+
+- Pedido do maestro: ao abrir uma ação, mostrar só 1 linha de resumo por
+  vendedor (não mais todos os blocos expandidos); tocar no vendedor abre os
+  números e a situação dele; "adicionar bloco" no topo (vendedores com 3–15
+  blocos rolavam demais); permitir adicionar vários blocos de uma vez com
+  inícios separados por vírgula; sem alert/prompt/confirm nativos; mobile-first.
+- `src/admin/sections/AcoesSection.jsx`: `AcaoDetail` agora lista vendedores
+  como linhas compactas (`.vend-row`: nome, blocos/vendidos/recebido, pendente
+  ou ✓); novo `VendedorDetail` com todos os blocos; novo `AddBlocksForm` no
+  topo (parse por vírgula/espaço, POST sequencial por bloco reaproveitando o
+  endpoint existente, vazio = próximo início livre sugerido); `useConfirm` +
+  modal próprio substitui `confirm()`; renomear vendedor virou edição inline
+  (antes era `prompt()`). Sem mudança de backend.
+- `src/admin.css`: estilos `.vend-*`, `.add-blocks*`, `.modal-*`.
+- Verificação: `npm run build` OK. Teste manual no navegador pendente (banco
+  local não estava de pé — postgres na 5432 era de outro projeto).
+
 ## 2026-07-25 — Confirmação do pedido: aviso de pagamento no caixa
 
 - Pedido do maestro: ao finalizar o pedido, deixar bem claro que o
