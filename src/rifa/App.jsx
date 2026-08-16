@@ -43,6 +43,9 @@ function Ranking({ id }) {
   const showSold = !!data.show_sold_numbers;
   const top = data.ranking.slice(0, 3);
   const rest = data.ranking.slice(3);
+  // Empate na borda do pódio: o rank repetido na tabela ganha "(empate)" para
+  // não parecer duplicação.
+  const topRanks = new Set(top.map((s) => s.rank));
 
   return (
     <React.Fragment>
@@ -59,7 +62,7 @@ function Ranking({ id }) {
           <tbody>
             {rest.map((s) => (
               <tr key={s.name + s.rank}>
-                <td className="rank-pos">{s.rank}º</td>
+                <td className="rank-pos">{s.rank}º{topRanks.has(s.rank) && <span className="rank-tie"> (empate)</span>}</td>
                 <td>{s.name}</td>
                 {showSold && <td className="num">{s.sold_numbers}</td>}
               </tr>
